@@ -46,6 +46,8 @@ CREATE TABLE "rideschedules" (
     "genderPreference" TEXT DEFAULT 'Any',
     "phone" TEXT DEFAULT '',
     "instagramId" TEXT DEFAULT '',
+    "vehicleType" TEXT DEFAULT 'Car',
+    "vehicleModel" TEXT DEFAULT '',
     "isActive" BOOLEAN DEFAULT true,
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_user FOREIGN KEY ("userId") REFERENCES "users"("_id") ON DELETE CASCADE
@@ -67,6 +69,8 @@ CREATE TABLE "rideposts" (
     "overrideTime" TEXT DEFAULT NULL,
     "phone" TEXT DEFAULT '',
     "instagramId" TEXT DEFAULT '',
+    "vehicleType" TEXT DEFAULT 'Car',
+    "vehicleModel" TEXT DEFAULT '',
     "joinedRiders" JSONB DEFAULT '[]',
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_driver FOREIGN KEY ("driverId") REFERENCES "users"("_id") ON DELETE CASCADE

@@ -274,7 +274,7 @@ export default function Dashboard() {
                         <img src={b.driver.profilePhoto} alt={b.driver.name} className="h-8 w-8 rounded-full bg-slate-100 object-cover" />
                         <div>
                           <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100">Driver: {b.driver.name}</h4>
-                          <p className="text-[10px] text-slate-400 font-semibold">{b.driver.vehicleDetails.type} • {b.driver.vehicleDetails.model}</p>
+                          <p className="text-[10px] text-slate-400 font-semibold">{b.ride.vehicleType || b.driver.vehicleDetails.type} • {b.ride.vehicleModel || b.driver.vehicleDetails.model}</p>
                         </div>
                       </div>
 
@@ -361,6 +361,9 @@ export default function Dashboard() {
                       </p>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
                         <strong>Departure Time:</strong> {ride.departureTime} {ride.overrideTime && <span className="text-[10px] text-yellow-500 font-bold">(Overridden)</span>}
+                      </p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">
+                        <strong>Vehicle:</strong> {ride.vehicleType || 'Car'} • {ride.vehicleModel || 'N/A'}
                       </p>
                     </div>
 

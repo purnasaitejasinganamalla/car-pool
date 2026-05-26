@@ -45,6 +45,8 @@ const RideScheduleSchema = new mongoose.Schema({
   genderPreference: { type: String, enum: ['Any', 'Male', 'Female'], default: 'Any' },
   phone: { type: String, default: '' },
   instagramId: { type: String, default: '' },
+  vehicleType: { type: String, enum: ['Bike', 'Car', 'None'], default: 'Car' },
+  vehicleModel: { type: String, default: '' },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });
 
@@ -63,6 +65,8 @@ const RidePostSchema = new mongoose.Schema({
   overrideTime: { type: String, default: null }, // To edit today/tomorrow leave time only
   phone: { type: String, default: '' },
   instagramId: { type: String, default: '' },
+  vehicleType: { type: String, enum: ['Bike', 'Car', 'None'], default: 'Car' },
+  vehicleModel: { type: String, default: '' },
   joinedRiders: [{
     riderId: String,
     bookingId: String,

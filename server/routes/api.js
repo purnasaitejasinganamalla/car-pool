@@ -275,7 +275,8 @@ router.post('/rides/post', authMiddleware, async (req, res) => {
     const {
       pickup, destination, landmark, routeDescription,
       time, repeatType, selectedDays, selectedDates,
-      seats, price, genderPreference, phone, instagramId
+      seats, price, genderPreference, phone, instagramId,
+      vehicleType, vehicleModel
     } = req.body;
 
     if (!pickup || !destination || !time || !repeatType || !seats || !price) {
@@ -298,6 +299,8 @@ router.post('/rides/post', authMiddleware, async (req, res) => {
       genderPreference: genderPreference || 'Any',
       phone: phone || '',
       instagramId: instagramId || '',
+      vehicleType: vehicleType || 'Car',
+      vehicleModel: vehicleModel || '',
       isActive: true
     });
 

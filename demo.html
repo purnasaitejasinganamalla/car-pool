@@ -620,7 +620,7 @@ const destIcon = window.L.divIcon({
     function App() {
       // Data version — bump this string whenever initial data schema changes
       // so stale LocalStorage caches are automatically cleared.
-      const DATA_VERSION = 'v3';
+      const DATA_VERSION = 'v4';
       if (localStorage.getItem('cr_data_version') !== DATA_VERSION) {
         localStorage.removeItem('cr_posts');
         localStorage.removeItem('cr_users');
@@ -1283,20 +1283,19 @@ const destIcon = window.L.divIcon({
       const [upiInput, setUpiInput] = useState('');
       const [txnInput, setTxnInput] = useState('');
       useLucideRefresh(paymentModal + ridePosts.length);
-      // Get my bookings (joined rides) and requests (rides I host)
       const myBookingsList = bookings.filter(b => b.riderId === currentUser._id).map(b => {
         const ride = ridePosts.find(p => p._id === b.rideId);
-        const driver = users.find(u => u._id === ride.driverId);
+        const driver = ride ? users.find(u => u._id === ride.driverId) : null;
         return { ...b, ride, driver };
-      });
+      }).filter(b => b.ride && b.driver);
       const incomingRequests = bookings.filter(b => {
         const ride = ridePosts.find(p => p._id === b.rideId);
-        return ride.driverId === currentUser._id;
+        return ride && ride.driverId === currentUser._id;
       }).map(b => {
         const ride = ridePosts.find(p => p._id === b.rideId);
         const rider = users.find(u => u._id === b.riderId);
         return { ...b, ride, rider };
-      });
+      }).filter(b => b.ride && b.rider);
       const myHostedRides = ridePosts.filter(p => p.driverId === currentUser._id);
       const handleApproveBooking = (bookingId, status) => {
         let targetBooking = null;
@@ -1433,7 +1432,7 @@ const destIcon = window.L.divIcon({
                             <img src={b.driver.profilePhoto} className="h-7 w-7 rounded-full bg-slate-100" />
                             <div>
                               <h4 className="text-xs font-bold">{b.driver.name}</h4>
-                              <p className="text-[9px] text-slate-400">{b.driver.vehicleDetails.type} • {b.driver.vehicleDetails.model}</p>
+                              <p className="text-[9px] text-slate-400">{b.ride.vehicleType || b.driver.vehicleDetails.type} • {b.ride.vehicleModel || b.driver.vehicleDetails.model}</p>
                             </div>
                           </div>
                           <div className="space-y-1 text-xs text-slate-500 mb-4">
@@ -1517,6 +1516,7 @@ const destIcon = window.L.divIcon({
                           <p><strong>From:</strong> {ride.pickup}</p>
                           <p><strong>To:</strong> {ride.destination}</p>
                           <p><strong>Time:</strong> {ride.departureTime}</p>
+                          <p><strong>Vehicle:</strong> {ride.vehicleType || 'Car'} • {ride.vehicleModel || 'N/A'}</p>
                         </div>
                         <div className="flex justify-between items-center text-xs font-bold bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border mb-3">
                           <span className="text-slate-400">Seats remaining:</span>
@@ -1665,6 +1665,7 @@ const destIcon = window.L.divIcon({
       const [genderPreference, setGenderPreference] = useState('Any');
       const [driverPhone, setDriverPhone] = useState(currentUser?.phone || '');
       const [driverInstagram, setDriverInstagram] = useState(currentUser?.instagramId || '');
+      const [vehicleType, setVehicleType] = useState(() => (currentUser?.vehicleDetails?.type === 'Bike' || currentUser?.vehicleDetails?.type === 'Car') ? currentUser.vehicleDetails.type : 'Car');
       const [vehicleModel, setVehicleModel] = useState(currentUser?.vehicleDetails?.model || '');
       const [repeatType, setRepeatType] = useState('Today'); // Today, Tomorrow, EveryDay, Weekly, Calendar
       const [selectedDays, setSelectedDays] = useState([]);
@@ -1706,32 +1707,65 @@ const destIcon = window.L.divIcon({
           genderPreference,
           phone: driverPhone,
           instagramId: driverInstagram ? (driverInstagram.startsWith('@') ? driverInstagram : `@${driverInstagram}`) : '',
+          vehicleType,
           vehicleModel,
           isActive: true
         };
         setSchedules(prev => [...prev, newSched]);
         upsertSupabaseCloud('rideschedules', newSchedId, newSched);
-        // 2. Generate active posts based on scheduler
-        const newPost = {
-          _id: 'p' + (ridePosts.length + 1),
-          scheduleId: newSchedId,
-          driverId: currentUser._id,
-          rideDate: repeatType === 'Tomorrow' ? tomorrowStr : todayStr,
-          departureTime: time,
-          pickup,
-          destination,
-          landmark,
-          seatsAvailable: Number(seats),
-          originalSeats: Number(seats),
-          price: Number(price),
-          phone: driverPhone,
-          instagramId: driverInstagram ? (driverInstagram.startsWith('@') ? driverInstagram : `@${driverInstagram}`) : '',
-          vehicleModel,
-          status: 'Active',
-          joinedRiders: []
-        };
-        setRidePosts(prev => [newPost, ...prev]);
-        upsertSupabaseCloud('rideposts', newPost._id, newPost);
+
+        // 2. Generate active posts based on scheduler selection
+        let postsToCreate = [];
+        if (repeatType === 'Today') {
+          postsToCreate.push(todayStr);
+        } else if (repeatType === 'Tomorrow') {
+          postsToCreate.push(tomorrowStr);
+        } else if (repeatType === 'EveryDay') {
+          postsToCreate.push(todayStr);
+          postsToCreate.push(tomorrowStr);
+        } else if (repeatType === 'Weekly') {
+          const todayD = new Date().getDay();
+          const tomorrowD = new Date(Date.now() + 86400000).getDay();
+          if (selectedDays.includes(todayD)) postsToCreate.push(todayStr);
+          if (selectedDays.includes(tomorrowD)) postsToCreate.push(tomorrowStr);
+        } else if (repeatType === 'Calendar') {
+          calendarDates.forEach(d => {
+            postsToCreate.push(d);
+          });
+        }
+
+        let currentPostLength = ridePosts.length;
+        const generatedPosts = [];
+
+        for (const rDate of postsToCreate) {
+          currentPostLength++;
+          const newPost = {
+            _id: 'p' + currentPostLength + '_' + Math.random().toString(36).substr(2, 5),
+            scheduleId: newSchedId,
+            driverId: currentUser._id,
+            rideDate: rDate,
+            departureTime: time,
+            pickup,
+            destination,
+            landmark,
+            seatsAvailable: Number(seats),
+            originalSeats: Number(seats),
+            price: Number(price),
+            phone: driverPhone,
+            instagramId: driverInstagram ? (driverInstagram.startsWith('@') ? driverInstagram : `@${driverInstagram}`) : '',
+            vehicleType,
+            vehicleModel,
+            status: 'Active',
+            joinedRiders: []
+          };
+          generatedPosts.push(newPost);
+          upsertSupabaseCloud('rideposts', newPost._id, newPost);
+        }
+
+        if (generatedPosts.length > 0) {
+          setRidePosts(prev => [...generatedPosts, ...prev]);
+        }
+
         addNotification({ title: 'Ride Posted Successfully', message: `Your commute starting from ${pickup} is live!` });
         onNavigate('dashboard');
       };
@@ -1829,7 +1863,23 @@ const destIcon = window.L.divIcon({
                 </div>
               </div>
               <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
-                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">🚗 Vehicle Name / Model</label>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">🚗 Vehicle Type</label>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {['Bike', 'Car'].map(t => (
+                    <button
+                      key={t} type="button" onClick={() => setVehicleType(t)}
+                      className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                        vehicleType === t 
+                          ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-950/20 dark:text-brand-400' 
+                          : 'border-slate-200 dark:border-slate-800 dark:text-slate-400'
+                      }`}
+                    >
+                      {t === 'Bike' ? '🏍️ Bike' : '🚗 Car'}
+                    </button>
+                  ))}
+                </div>
+
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Vehicle Name / Model</label>
                 <input
                   type="text"
                   value={vehicleModel}
@@ -2159,7 +2209,7 @@ if (seats <= 0) return { text: 'Ride Full', cls: 'bg-red-50 text-red-600 border 
                         {/* Badges row */}
                         <div className="flex flex-wrap gap-1.5 mb-3">
                           <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${badge.cls}`}>{badge.text}</span>
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">{ride.driver.vehicleDetails.type} • {ride.vehicleModel || ride.driver.vehicleDetails.model || 'Vehicle'}</span>
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">{ride.vehicleType || ride.driver.vehicleDetails.type} • {ride.vehicleModel || ride.driver.vehicleDetails.model || 'Vehicle'}</span>
                           {ride.genderPreference && ride.genderPreference !== 'Any' && (
                             <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-purple-50 text-purple-600 border border-purple-100">{ride.genderPreference} only</span>
                           )}

@@ -21,6 +21,8 @@ export default function PostRide() {
   const [genderPreference, setGenderPreference] = useState('Any');
   const [phone, setPhone] = useState(user?.phone || '');
   const [instagramId, setInstagramId] = useState(user?.instagramId || '');
+  const [vehicleType, setVehicleType] = useState(() => (user?.vehicleDetails?.type === 'Bike' || user?.vehicleDetails?.type === 'Car') ? user.vehicleDetails.type : 'Car');
+  const [vehicleModel, setVehicleModel] = useState(user?.vehicleDetails?.model || '');
   const [colleges, setColleges] = useState([]);
 
   React.useEffect(() => {
@@ -105,7 +107,9 @@ export default function PostRide() {
           price: Number(price),
           genderPreference,
           phone,
-          instagramId: instagramId ? (instagramId.startsWith('@') ? instagramId : `@${instagramId}`) : ''
+          instagramId: instagramId ? (instagramId.startsWith('@') ? instagramId : `@${instagramId}`) : '',
+          vehicleType,
+          vehicleModel
         })
       });
 
@@ -295,6 +299,36 @@ export default function PostRide() {
                   />
                 </div>
               </div>
+            </div>
+
+            <div className="border-t border-slate-100 dark:border-slate-800/50 pt-4">
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">🚗 Vehicle Type</label>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {['Bike', 'Car'].map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setVehicleType(t)}
+                    className={`py-2 text-xs font-bold rounded-xl border transition-all ${
+                      vehicleType === t
+                        ? 'border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-950/20 dark:text-brand-400'
+                        : 'border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:text-slate-400'
+                    }`}
+                  >
+                    {t === 'Bike' ? '🏍️ Bike' : '🚗 Car'}
+                  </button>
+                ))}
+              </div>
+
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Vehicle Name / Model</label>
+              <input
+                type="text"
+                placeholder="e.g. Honda City, Royal Enfield Classic 350"
+                value={vehicleModel}
+                onChange={(e) => setVehicleModel(e.target.value)}
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-slate-200 bg-white/50 focus:border-brand-500 outline-none dark:border-slate-800 dark:bg-slate-900/50 dark:text-white"
+              />
+              <p className="text-[10px] text-slate-400 mt-1">This will be shown on your ride card so riders know what vehicle to look for.</p>
             </div>
 
           </div>

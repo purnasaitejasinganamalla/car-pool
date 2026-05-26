@@ -91,6 +91,8 @@ const runScheduler = async (targetDateStr) => {
             price: schedule.price,
             phone: schedule.phone || '',
             instagramId: schedule.instagramId || '',
+            vehicleType: schedule.vehicleType || 'Car',
+            vehicleModel: schedule.vehicleModel || '',
             status: 'Active',
             joinedRiders: []
           });

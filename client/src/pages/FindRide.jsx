@@ -318,7 +318,7 @@ export default function FindRide() {
                         </span>
 
                         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                          🚗 {ride.driver.vehicleDetails.type} • {ride.driver.vehicleDetails.model}
+                          🚗 {ride.vehicleType || ride.driver.vehicleDetails.type} • {ride.vehicleModel || ride.driver.vehicleDetails.model || 'Vehicle'}
                         </span>
                       </div>
                     </div>
