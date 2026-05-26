@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { AuthContext, SocketContext } from '../App';
-import { Plus, Search, Calendar, ChevronRight, Check, X, ShieldAlert, Award, User, MessageSquare, Phone, QrCode } from 'lucide-react';
+import { Plus, Search, Calendar, ChevronRight, Check, X, ShieldAlert, Award, User, MessageSquare, Phone, QrCode, Info } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import InteractiveMap from '../components/InteractiveMap';
 import { motion } from 'framer-motion';
@@ -340,18 +340,23 @@ export default function Dashboard() {
                 {hostedRides.map((ride) => (
                   <div key={ride._id} className="glass-card rounded-2xl p-5 border border-slate-200/50 dark:border-slate-800/40 hover:shadow-premium transition-all flex flex-col justify-between">
                     <div>
-                      {/* Status and Date Header */}
+                      {/* Driver Card Header */}
                       <div className="flex justify-between items-start gap-2 mb-4 border-b border-slate-100 dark:border-slate-800/50 pb-3">
-                        <span className={`px-2.5 py-1 text-[9px] font-extrabold rounded-lg border uppercase tracking-wider ${
-                          ride.status === 'Active' 
-                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/50' 
-                            : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700'
-                        }`}>
-                          {ride.status}
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-400">
-                          {ride.rideDate}
-                        </span>
+                        <div className="flex items-center gap-2.5">
+                          <img src={user.profilePhoto || 'https://via.placeholder.com/150'} alt={user.name} className="h-9 w-9 rounded-full bg-slate-100 object-cover border border-slate-200" />
+                          <div>
+                            <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1">
+                              {user.name}
+                              {user.isVerified && <span className="text-[10px] text-brand-500" title="Student Verified">✓</span>}
+                            </h4>
+                            <span className="text-[9px] text-slate-400 font-bold block">{user.college}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col items-end">
+                          <span className="text-xs font-extrabold text-brand-500">₹{ride.price || 0}</span>
+                          <span className="text-[8px] text-slate-400 uppercase font-bold tracking-wider">fuel share</span>
+                        </div>
                       </div>
 
                       {/* Locations details */}
@@ -364,35 +369,80 @@ export default function Dashboard() {
                           <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0"></span>
                           <span className="truncate"><strong>College:</strong> {ride.destination}</span>
                         </div>
-                        <div className="text-[10px] text-slate-400 flex items-center gap-2 bg-slate-50 dark:bg-slate-900/40 p-2 rounded-xl border border-slate-100/50 dark:border-slate-850 mt-2">
-                          <span className="text-slate-400 shrink-0">🕒</span>
-                          <span className="truncate"><strong>Departure:</strong> {ride.departureTime} {ride.overrideTime && <span className="text-yellow-500 font-bold">(Overridden)</span>}</span>
+                        <div className="text-[10px] text-slate-400 flex items-center gap-2 bg-slate-50 dark:bg-slate-900/40 p-2 rounded-xl border border-slate-100/50 dark:border-slate-850">
+                          <Info size={12} className="text-slate-400 shrink-0" />
+                          <span className="truncate"><strong>Landmark:</strong> {ride.landmark || 'Main Street'}</span>
                         </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 mt-1">
+                          <span className="shrink-0 text-slate-400">🕐</span>
+                          <span><strong>When:</strong> {ride.rideDate} at {ride.departureTime} {ride.overrideTime && <span className="text-yellow-500 font-bold">(Overridden)</span>}</span>
+                        </div>
+                      </div>
+
+                      {/* Contact details */}
+                      <div className="flex flex-wrap gap-2 mb-3 mt-1 text-[10px] font-bold">
+                        <a 
+                          href={`tel:${ride.phone || user.phone}`} 
+                          className="flex items-center gap-1 text-slate-600 hover:text-brand-500 bg-slate-100/60 dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800"
+                        >
+                          <Phone size={10} className="text-brand-500" />
+                          <span>{ride.phone || user.phone}</span>
+                        </a>
+                        {(ride.instagramId || user.instagramId) && (
+                          <a 
+                            href={`https://instagram.com/${(ride.instagramId || user.instagramId).replace(/^@/, '')}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-slate-600 hover:text-pink-500 bg-slate-100/60 dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800"
+                          >
+                            <span className="text-pink-500 font-bold text-[9px] leading-none">📸</span>
+                            <span>{ride.instagramId || user.instagramId}</span>
+                          </a>
+                        )}
                       </div>
 
                       {/* Seat details / type */}
                       <div className="flex justify-between items-center gap-2 mb-4">
-                        <span className={`px-2.5 py-1 text-[9px] font-extrabold rounded-lg uppercase tracking-wider ${
-                          ride.seatsAvailable > 2 ? 'bg-emerald-100 text-emerald-700' : ride.seatsAvailable > 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                          {ride.seatsAvailable} / {ride.originalSeats} seats left
-                        </span>
+                        <div className="flex gap-1.5">
+                          <span className={`px-2.5 py-1 text-[9px] font-extrabold rounded-lg border uppercase tracking-wider ${
+                            ride.seatsAvailable === 0
+                              ? 'bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/20 dark:text-red-400'
+                              : ride.seatsAvailable === 1
+                              ? 'bg-yellow-50 text-yellow-600 border border-yellow-200 dark:bg-yellow-950/20 dark:text-yellow-400'
+                              : 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400'
+                          }`}>
+                            {ride.seatsAvailable === 0
+                              ? 'Ride Full'
+                              : ride.seatsAvailable === 1
+                              ? 'Only 1 seat left'
+                              : `${ride.seatsAvailable} seats available`}
+                          </span>
+                          <span className={`px-2.5 py-1 text-[9px] font-extrabold rounded-lg border uppercase tracking-wider ${
+                            ride.status === 'Active'
+                              ? 'bg-emerald-50 text-emerald-600 border border-emerald-100 dark:bg-emerald-950/20 dark:text-emerald-400'
+                              : 'bg-slate-100 text-slate-500 border border-slate-200 dark:bg-slate-900/20 dark:text-slate-400'
+                          }`}>
+                            {ride.status}
+                          </span>
+                        </div>
 
                         <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                          🚗 {ride.vehicleType || 'Car'} • {ride.vehicleModel || 'N/A'}
+                          🚗 {ride.vehicleType || user.vehicleDetails?.type || 'Car'} • {ride.vehicleModel || user.vehicleDetails?.model || 'Vehicle'}
                         </span>
                       </div>
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="flex justify-end gap-2 pt-3.5 border-t border-slate-100 dark:border-slate-800/50">
-                      <button 
-                        onClick={() => handleSkipDate(ride.scheduleId, ride.rideDate)}
-                        className="rounded-xl border border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 px-4 py-2 text-xs font-bold transition-all dark:border-red-950/30 dark:hover:bg-red-950/20"
-                      >
-                        Cancel Ride
-                      </button>
-                    </div>
+                    {ride.status === 'Active' && (
+                      <div className="flex gap-2 pt-3.5 border-t border-slate-100 dark:border-slate-800/50">
+                        <button 
+                          onClick={() => handleSkipDate(ride.scheduleId, ride.rideDate)}
+                          className="flex-grow py-2.5 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 font-bold text-xs uppercase tracking-wide transition-all dark:border-red-950/30 dark:hover:bg-red-950/20"
+                        >
+                          Cancel Ride
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
