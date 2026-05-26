@@ -1,1131 +1,2658 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en" class="light">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>CampusRide – Campus Carpool Platform</title>
-<meta name="description" content="Find or post rides between college campuses. Safe, affordable, student-friendly carpooling."/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-  tailwind.config = {
-    darkMode: 'class',
-    theme: {
-      extend: {
-        fontFamily: { outfit: ['Outfit', 'sans-serif'] },
-        colors: {
-          brand: { DEFAULT: '#3b82f6', dark: '#2563eb', light: '#93c5fd' }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CampusRide — Student Carpool Platform</title>
+  
+  <!-- Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eff6ff',
+              100: '#dbeafe',
+              200: '#bfdbfe',
+              300: '#93c5fd',
+              400: '#60a5fa',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#1e3a8a',
+            },
+            accent: {
+              green: '#10b981',
+              yellow: '#f59e0b',
+              red: '#ef4444'
+            }
+          },
+          fontFamily: {
+            sans: ['Outfit', 'Inter', 'sans-serif'],
+          }
         }
       }
     }
-  };
-</script>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<style>
-  * { font-family: 'Outfit', sans-serif; box-sizing: border-box; }
-  body { margin: 0; background: #0f172a; color: #f1f5f9; }
-  ::-webkit-scrollbar { width: 4px; }
-  ::-webkit-scrollbar-track { background: #1e293b; }
-  ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 2px; }
-  .glass { background: rgba(30,41,59,0.8); backdrop-filter: blur(12px); border: 1px solid rgba(148,163,184,0.1); }
-  .glass-light { background: rgba(51,65,85,0.5); backdrop-filter: blur(8px); border: 1px solid rgba(148,163,184,0.08); }
-  #map { height: 300px; width: 100%; border-radius: 12px; z-index: 1; }
-  .leaflet-container { border-radius: 12px; }
-  .nav-item { transition: all 0.2s ease; }
-  .nav-item:hover { transform: translateY(-2px); }
-  .nav-item.active { color: #3b82f6; }
-  .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
-  .card-hover:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
-  .btn-primary { background: linear-gradient(135deg, #3b82f6, #6366f1); transition: all 0.2s ease; }
-  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 20px rgba(59,130,246,0.4); }
-  .btn-secondary { background: rgba(51,65,85,0.8); border: 1px solid rgba(148,163,184,0.2); transition: all 0.2s ease; }
-  .btn-secondary:hover { border-color: #3b82f6; color: #3b82f6; }
-  .input-field { background: rgba(15,23,42,0.8); border: 1px solid rgba(148,163,184,0.15); color: #f1f5f9; transition: border-color 0.2s; }
-  .input-field:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
-  .input-field::placeholder { color: #64748b; }
-  .vehicle-card { transition: all 0.2s ease; cursor: pointer; }
-  .vehicle-card:hover { border-color: #3b82f6; background: rgba(59,130,246,0.1); }
-  .vehicle-card.selected { border-color: #3b82f6; background: rgba(59,130,246,0.15); box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
-  .tag { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; }
-  .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4,0,0.6,1) infinite; }
-  @keyframes fadeInUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
-  .fade-in { animation: fadeInUp 0.35s ease forwards; }
-  .gradient-text { background: linear-gradient(135deg, #3b82f6, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-</style>
+  </script>
+  <!-- React & Babel CDNs -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- Leaflet Maps CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Custom CSS style rules -->
+  <style>
+    /* Custom styles similar to index.css */
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .dark .glass-panel {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+    }
+    .dark .glass-card {
+      background: rgba(30, 41, 59, 0.45);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    }
+    body {
+      transition: background-color 0.3s, color 0.3s;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #334155;
+    }
+  </style>
 </head>
-<body>
-<div id="root"></div>
-<script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
-
-// ─── Constants ────────────────────────────────────────────────
-const DATA_VERSION = 'v4';
-const SUPABASE_URL = 'https://bjdpfsgfyjmdpioxcgpm.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_pVjsFSffW9oykqxmywOdkQ_D43QCnN6';
-const LIQ_KEY = 'pk.481323876891a2b0607386a3ef75c7a0';
-
-const COLLEGES = [
-  'IIT Bombay','Delhi University (DU)','BITS Pilani','PES University',
-  'New Horizon College of Engineering','Dayananda Sagar College of Engineering',
-  'MSRIT Bangalore','BMS College of Engineering','RV College of Engineering',
-  'IIT Delhi','IIT Madras','VIT Vellore','NIT Trichy',
-  'Amity University Noida','Christ University Bangalore'
-];
-
-const DEMO_USERS = [
-  { id:'u1', name:'Aarav Sharma',  email:'aarav@iitb.ac.in',   password:'1234', college:'IIT Bombay',           vehicle:'Car',  model:'Honda City',        avatar:'AS' },
-  { id:'u2', name:'Ananya Iyer',   email:'ananya@iitb.ac.in',  password:'1234', college:'IIT Bombay',           vehicle:'Bike', model:'Royal Enfield 350', avatar:'AI' },
-  { id:'u3', name:'Rohan Verma',   email:'rohan@iitb.ac.in',   password:'1234', college:'IIT Bombay',           vehicle:null,   model:null,                avatar:'RV' },
-  { id:'u4', name:'Sneha Patel',   email:'sneha@du.ac.in',     password:'1234', college:'Delhi University (DU)',vehicle:'Car',  model:'Hyundai i20',       avatar:'SP' },
-];
-
-const DEMO_RIDES = [
-  {
-    id:'r1', userId:'u1', driverName:'Aarav Sharma', driverAvatar:'AS',
-    college:'IIT Bombay', pickup:'Powai Lake Gate', destination:'IIT Bombay',
-    landmark:'Near Hiranandani Hospital', route:'Powai → JVLR → IIT Gate',
-    date: getTodayStr(), time:'08:30', seats:2, price:60,
-    gender:'Any', vehicleType:'Car', vehicleModel:'Honda City',
-    phone:'+91 98765 43210', instagram:'@aarav_sharma',
-    schedule:'Today', vehicleImg: null
-  },
-  {
-    id:'r2', userId:'u2', driverName:'Ananya Iyer', driverAvatar:'AI',
-    college:'IIT Bombay', pickup:'Ghatkopar Station', destination:'IIT Bombay',
-    landmark:'Platform 1 exit', route:'Ghatkopar → LBS Marg → IIT Gate',
-    date: getTodayStr(), time:'09:00', seats:1, price:40,
-    gender:'Female', vehicleType:'Bike', vehicleModel:'Royal Enfield 350',
-    phone:'+91 91234 56789', instagram:'@ananya_iyer',
-    schedule:'Today', vehicleImg: null
-  },
-  {
-    id:'r3', userId:'u4', driverName:'Sneha Patel', driverAvatar:'SP',
-    college:'Delhi University (DU)', pickup:'Connaught Place', destination:'Delhi University (DU)',
-    landmark:'Block A Metro Exit', route:'CP → Ring Road → Maurice Nagar',
-    date: getTodayStr(), time:'07:45', seats:3, price:80,
-    gender:'Any', vehicleType:'Car', vehicleModel:'Hyundai i20',
-    phone:'+91 93333 22222', instagram:'@sneha_p',
-    schedule:'Today', vehicleImg: null
-  },
-  {
-    id:'r4', userId:'u4', driverName:'Sneha Patel', driverAvatar:'SP',
-    college:'Delhi University (DU)', pickup:'Rajouri Garden', destination:'Delhi University (DU)',
-    landmark:'Near Green Park Metro', route:'Rajouri Garden → Ring Road → DU',
-    date: getTomorrowStr(), time:'08:00', seats:2, price:70,
-    gender:'Female', vehicleType:'Car', vehicleModel:'Hyundai i20',
-    phone:'+91 93333 22222', instagram:'@sneha_p',
-    schedule:'Tomorrow', vehicleImg: null
-  },
-];
-
-function getTodayStr() {
-  const d = new Date();
-  return d.toISOString().split('T')[0];
-}
-function getTomorrowStr() {
-  const d = new Date();
-  d.setDate(d.getDate() + 1);
-  return d.toISOString().split('T')[0];
-}
-
-// ─── LocalStorage helpers ─────────────────────────────────────
-function initStorage() {
-  const ver = localStorage.getItem('cr_version');
-  if (ver !== DATA_VERSION) {
-    ['cr_users','cr_rides','cr_bookings'].forEach(k => localStorage.removeItem(k));
-    localStorage.setItem('cr_version', DATA_VERSION);
-  }
-  if (!localStorage.getItem('cr_users')) {
-    localStorage.setItem('cr_users', JSON.stringify(DEMO_USERS));
-  }
-  if (!localStorage.getItem('cr_rides')) {
-    localStorage.setItem('cr_rides', JSON.stringify(DEMO_RIDES));
-  }
-  if (!localStorage.getItem('cr_bookings')) {
-    localStorage.setItem('cr_bookings', JSON.stringify([]));
-  }
-}
-
-function getUsers() { return JSON.parse(localStorage.getItem('cr_users') || '[]'); }
-function getRides() { return JSON.parse(localStorage.getItem('cr_rides') || '[]'); }
-function getBookings() { return JSON.parse(localStorage.getItem('cr_bookings') || '[]'); }
-function saveRides(rides) { localStorage.setItem('cr_rides', JSON.stringify(rides)); }
-function saveBookings(bookings) { localStorage.setItem('cr_bookings', JSON.stringify(bookings)); }
-
-// ─── Supabase helper ──────────────────────────────────────────
-async function supabaseInsert(table, data) {
-  try {
-    await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-      method: 'POST',
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+  <div id="root" class="flex flex-col flex-grow"></div>
+  <!-- React JSX Application Code -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef, createContext, useContext } = React;
+    // ----------------------------------------------------
+    // INITIAL MOCK DATA STORE
+    // ----------------------------------------------------
+    const initialUsers = [
+      {
+        _id: 'u1',
+        name: 'Aarav Sharma',
+        college: 'IIT Bombay',
+        email: 'aarav.sharma@iitb.ac.in',
+        phone: '+91 98765 43210',
+        password: '1234',
+        instagramId: '@aarav_sharma',
+        profilePhoto: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Aarav',
+        vehicleDetails: { type: 'Car', model: 'Honda City (Blue)', number: 'MH-02-AB-1234' },
+        isVerified: true,
+        isBanned: false,
+        emergencyContact: '+91 99999 88888',
+        ratings: [
+          { reviewerId: 'u3', rating: 5, review: 'Always on time and very friendly!', createdAt: '2026-05-25T10:00:00Z' }
+        ],
+        averageRating: 5.0,
+        savedFuelEstimate: 12.4
       },
-      body: JSON.stringify(data)
-    });
-  } catch(e) { /* offline – localStorage is source of truth */ }
-}
-
-// ─── Icon helper ──────────────────────────────────────────────
-function Icon({ name, size=18, className='' }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    if (ref.current && window.lucide) {
-      ref.current.innerHTML = '';
-      const el = document.createElement('i');
-      el.setAttribute('data-lucide', name);
-      el.style.width = size + 'px';
-      el.style.height = size + 'px';
-      ref.current.appendChild(el);
-      window.lucide.createIcons({ nodes: [el] });
-    }
-  }, [name, size]);
-  return <span ref={ref} className={'inline-flex items-center justify-center ' + className}/>;
-}
-
-// ─── Avatar ───────────────────────────────────────────────────
-const AVATAR_COLORS = ['from-blue-500 to-indigo-600','from-purple-500 to-pink-500','from-emerald-500 to-teal-600','from-orange-400 to-red-500'];
-function Avatar({ initials, size=40, idx=0 }) {
-  const grad = AVATAR_COLORS[idx % AVATAR_COLORS.length];
-  return (
-    <div className={`rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-br ${grad} shrink-0`}
-      style={{ width: size, height: size, fontSize: size * 0.38 }}>
-      {initials}
-    </div>
-  );
-}
-
-// ─── Toast ────────────────────────────────────────────────────
-function Toast({ msg, type, onClose }) {
-  useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, []);
-  const bg = type === 'error' ? 'bg-red-500/90' : type === 'warn' ? 'bg-yellow-500/90' : 'bg-emerald-500/90';
-  return (
-    <div className={`fixed top-4 right-4 z-50 ${bg} text-white px-5 py-3 rounded-xl shadow-xl fade-in flex items-center gap-3 max-w-xs`}>
-      <Icon name={type==='error'?'x-circle':type==='warn'?'alert-triangle':'check-circle'} size={18}/>
-      <span className="text-sm font-medium">{msg}</span>
-      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><Icon name="x" size={14}/></button>
-    </div>
-  );
-}
-
-// ─── Auth Screen ──────────────────────────────────────────────
-function AuthScreen({ onLogin }) {
-  const [mode, setMode] = useState('login');
-  const [form, setForm] = useState({ name:'', email:'', password:'', college:'IIT Bombay' });
-  const [err, setErr] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  function upd(k, v) { setForm(f => ({ ...f, [k]: v })); setErr(''); }
-
-  function submit(e) {
-    e.preventDefault();
-    setLoading(true);
-    setErr('');
-    setTimeout(() => {
-      const users = getUsers();
-      if (mode === 'login') {
-        const u = users.find(u => u.email === form.email && u.password === form.password);
-        if (!u) { setErr('Invalid email or password'); setLoading(false); return; }
-        onLogin(u);
-      } else {
-        if (!form.name || !form.email || !form.password) { setErr('All fields required'); setLoading(false); return; }
-        if (users.find(u => u.email === form.email)) { setErr('Email already registered'); setLoading(false); return; }
-        const newUser = { id: 'u_' + Date.now(), name: form.name, email: form.email, password: form.password, college: form.college, vehicle: null, model: null, avatar: form.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) };
-        const updated = [...users, newUser];
-        localStorage.setItem('cr_users', JSON.stringify(updated));
-        onLogin(newUser);
+      {
+        _id: 'u2',
+        name: 'Ananya Iyer',
+        college: 'IIT Bombay',
+        email: 'ananya.iyer@iitb.ac.in',
+        phone: '+91 91234 56789',
+        password: '1234',
+        instagramId: '@ananya_iyer',
+        profilePhoto: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Ananya',
+        vehicleDetails: { type: 'Bike', model: 'Royal Enfield Classic 350', number: 'MH-03-XY-9876' },
+        isVerified: true,
+        isBanned: false,
+        emergencyContact: '+91 98888 77777',
+        ratings: [
+          { reviewerId: 'u3', rating: 5, review: 'Awesome bike rider. Great chat along the way!', createdAt: '2026-05-24T12:00:00Z' }
+        ],
+        averageRating: 5.0,
+        savedFuelEstimate: 6.2
+      },
+      {
+        _id: 'u3',
+        name: 'Rohan Verma',
+        college: 'IIT Bombay',
+        email: 'rohan.verma@iitb.ac.in',
+        phone: '+91 94444 33333',
+        password: '1234',
+        instagramId: '@rohan_v',
+        profilePhoto: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Rohan',
+        vehicleDetails: { type: 'None', model: '', number: '' },
+        isVerified: true,
+        isBanned: false,
+        emergencyContact: '+91 95555 44444',
+        ratings: [],
+        averageRating: 5.0,
+        savedFuelEstimate: 0
+      },
+      {
+        _id: 'u4',
+        name: 'Sneha Patel',
+        college: 'Delhi University (DU)',
+        email: 'sneha.patel@du.ac.in',
+        phone: '+91 93333 22222',
+        password: '1234',
+        instagramId: '@sneha_p',
+        profilePhoto: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Sneha',
+        vehicleDetails: { type: 'Car', model: 'Hyundai i20', number: 'DL-3C-CK-4567' },
+        isVerified: true,
+        isBanned: false,
+        emergencyContact: '+91 92222 11111',
+        ratings: [],
+        averageRating: 4.8,
+        savedFuelEstimate: 8.5
+      },
+      {
+        _id: 'u5',
+        name: 'CampusRide Admin',
+        college: 'IIT Bombay',
+        email: 'admin@campusride.org',
+        phone: '+91 90000 00000',
+        password: '1234',
+        instagramId: '',
+        profilePhoto: 'https://api.dicebear.com/7.x/bottts/svg?seed=admin',
+        vehicleDetails: { type: 'None', model: '', number: '' },
+        isVerified: true,
+        isBanned: false,
+        emergencyContact: '',
+        ratings: [],
+        averageRating: 5.0,
+        savedFuelEstimate: 0
       }
-      setLoading(false);
-    }, 500);
-  }
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl"/>
-        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"/>
-      </div>
-      <div className="w-full max-w-md glass rounded-2xl p-8 relative z-10 fade-in">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 mb-4 shadow-lg shadow-blue-500/30">
-            <Icon name="car" size={32} className="text-white"/>
-          </div>
-          <h1 className="text-3xl font-bold gradient-text">CampusRide</h1>
-          <p className="text-slate-400 text-sm mt-1">Campus Carpool Made Simple</p>
-        </div>
-        <div className="flex rounded-xl overflow-hidden mb-6 glass-light p-1">
-          {['login','register'].map(m => (
-            <button key={m} onClick={() => { setMode(m); setErr(''); }}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${mode===m ? 'bg-brand text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>
-              {m === 'login' ? 'Log In' : 'Register'}
-            </button>
-          ))}
-        </div>
-        <form onSubmit={submit} className="space-y-4">
-          {mode === 'register' && (
-            <div>
-              <label className="text-xs text-slate-400 mb-1 block">Full Name</label>
-              <input className="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="Your full name" value={form.name} onChange={e => upd('name', e.target.value)}/>
-            </div>
-          )}
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Email</label>
-            <input type="email" className="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="student@college.ac.in" value={form.email} onChange={e => upd('email', e.target.value)}/>
-          </div>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Password</label>
-            <input type="password" className="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="••••••••" value={form.password} onChange={e => upd('password', e.target.value)}/>
-          </div>
-          {mode === 'register' && (
-            <div>
-              <label className="text-xs text-slate-400 mb-1 block">College</label>
-              <select className="input-field w-full rounded-xl px-4 py-3 text-sm" value={form.college} onChange={e => upd('college', e.target.value)}>
-                {COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-          )}
-          {err && <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{err}</p>}
-          <button type="submit" disabled={loading}
-            className="btn-primary w-full py-3 rounded-xl text-white font-semibold text-sm mt-2 disabled:opacity-50 flex items-center justify-center gap-2">
-            {loading ? <><Icon name="loader-2" size={16} className="animate-spin"/>Processing...</> : mode === 'login' ? 'Log In' : 'Create Account'}
-          </button>
-        </form>
-        {mode === 'login' && (
-          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
-            <p className="text-xs text-blue-400 font-semibold mb-1">Demo Accounts (pwd: 1234)</p>
-            <div className="space-y-1">
-              {DEMO_USERS.map(u => (
-                <button key={u.id} onClick={() => { setForm(f => ({ ...f, email: u.email, password:'1234' })); }}
-                  className="text-xs text-slate-300 hover:text-blue-400 transition-colors block">
-                  {u.name} — {u.email}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ─── Bottom Nav ───────────────────────────────────────────────
-function BottomNav({ tab, setTab }) {
-  const items = [
-    { id:'dashboard', icon:'layout-dashboard', label:'Home' },
-    { id:'find',      icon:'search',           label:'Find Ride' },
-    { id:'post',      icon:'plus-circle',      label:'Post Ride' },
-    { id:'profile',   icon:'user-circle',      label:'Profile' },
-  ];
-  return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 glass border-t border-slate-700/50 px-2 pb-safe">
-      <div className="max-w-lg mx-auto flex justify-around">
-        {items.map(it => (
-          <button key={it.id} onClick={() => setTab(it.id)}
-            className={`nav-item flex flex-col items-center py-3 px-4 gap-1 ${tab === it.id ? 'active' : 'text-slate-500'}`}>
-            <Icon name={it.icon} size={22}/>
-            <span className="text-[10px] font-semibold">{it.label}</span>
-          </button>
-        ))}
-      </div>
-    </nav>
-  );
-}
-
-// ─── RideCard ─────────────────────────────────────────────────
-function RideCard({ ride, currentUser, onBook }) {
-  const [booked, setBooked] = useState(false);
-  const [showContact, setShowContact] = useState(false);
-
-  useEffect(() => {
-    if (currentUser) {
-      const bookings = getBookings();
-      setBooked(bookings.some(b => b.rideId === ride.id && b.userId === currentUser.id));
-    }
-  }, []);
-
-  function handleBook() {
-    if (!currentUser) return;
-    const bookings = getBookings();
-    if (bookings.some(b => b.rideId === ride.id && b.userId === currentUser.id)) return;
-    const booking = { id: 'b_' + Date.now(), rideId: ride.id, userId: currentUser.id, bookedAt: new Date().toISOString() };
-    const updated = [...bookings, booking];
-    saveBookings(updated);
-    supabaseInsert('bookings', { ride_id: ride.id, user_id: currentUser.id });
-    setBooked(true);
-    if (onBook) onBook();
-  }
-
-  const isOwn = currentUser && ride.userId === currentUser.id;
-  const avatarIdx = DEMO_USERS.findIndex(u => u.id === ride.userId);
-
-  return (
-    <div className="glass rounded-2xl p-4 card-hover fade-in">
-      <div className="flex items-start gap-3 mb-3">
-        <Avatar initials={ride.driverAvatar || ride.driverName?.slice(0,2)} size={44} idx={avatarIdx >= 0 ? avatarIdx : 0}/>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className="font-bold text-base text-slate-100 truncate">{ride.driverName}</h3>
-            <span className="tag bg-blue-500/20 text-blue-400 shrink-0">
-              {ride.seats} seat{ride.seats !== 1 ? 's' : ''}
-            </span>
-          </div>
-          <p className="text-xs text-slate-400 truncate">{ride.college}</p>
-        </div>
-      </div>
-
-      <div className="space-y-2 mb-3">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-            <Icon name="map-pin" size={11} className="text-emerald-400"/>
-          </span>
-          <span className="text-slate-300 truncate">{ride.pickup}</span>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
-            <Icon name="flag" size={11} className="text-blue-400"/>
-          </span>
-          <span className="text-slate-300 truncate">{ride.destination}</span>
-        </div>
-        {ride.route && (
-          <div className="flex items-center gap-2 text-xs">
-            <span className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
-              <Icon name="route" size={11} className="text-purple-400"/>
-            </span>
-            <span className="text-slate-500 truncate">{ride.route}</span>
-          </div>
-        )}
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-3">
-        <span className="tag bg-slate-700 text-slate-300">
-          <Icon name="clock" size={11} className="mr-1"/> {ride.time}
-        </span>
-        <span className="tag bg-emerald-500/20 text-emerald-400 font-bold">
-          ₹{ride.price}
-        </span>
-        {ride.gender && ride.gender !== 'Any' && (
-          <span className="tag bg-pink-500/20 text-pink-400">
-            <Icon name="user" size={11} className="mr-1"/> {ride.gender} only
-          </span>
-        )}
-        <span className="tag bg-indigo-500/20 text-indigo-400">
-          <Icon name={ride.vehicleType === 'Bike' ? 'bike' : 'car'} size={11} className="mr-1"/>
-          {ride.vehicleModel || ride.vehicleType}
-        </span>
-      </div>
-
-      {ride.vehicleImg && (
-        <div className="mb-3 rounded-xl overflow-hidden h-28 bg-slate-800">
-          <img src={ride.vehicleImg} alt="Vehicle" className="w-full h-full object-cover"/>
-        </div>
-      )}
-
-      <div className="border-t border-slate-700/50 pt-3 flex items-center justify-between gap-2">
-        <button onClick={() => setShowContact(!showContact)}
-          className="btn-secondary text-xs px-3 py-2 rounded-lg flex items-center gap-1.5">
-          <Icon name="phone" size={13}/> Contact
-        </button>
-        {!isOwn && (
-          <button onClick={handleBook} disabled={booked}
-            className={`text-xs px-4 py-2 rounded-lg font-semibold flex items-center gap-1.5 transition-all ${booked ? 'bg-emerald-500/20 text-emerald-400 cursor-default' : 'btn-primary text-white'}`}>
-            {booked ? <><Icon name="check" size={13}/> Joined</> : <><Icon name="plus" size={13}/> Join Ride</>}
-          </button>
-        )}
-        {isOwn && <span className="tag bg-yellow-500/20 text-yellow-400 text-xs">Your Ride</span>}
-      </div>
-
-      {showContact && (
-        <div className="mt-3 p-3 glass-light rounded-xl space-y-1.5 fade-in">
-          {ride.phone && (
-            <div className="flex items-center gap-2 text-sm">
-              <Icon name="phone" size={14} className="text-emerald-400"/>
-              <span className="text-slate-300">{ride.phone}</span>
-            </div>
-          )}
-          {ride.instagram && (
-            <div className="flex items-center gap-2 text-sm">
-              <Icon name="instagram" size={14} className="text-pink-400"/>
-              <span className="text-slate-300">{ride.instagram}</span>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Find Ride Tab ────────────────────────────────────────────
-function FindRideTab({ currentUser, toast }) {
-  const [filters, setFilters] = useState({ college:'', date:'', vehicleType:'', gender:'' });
-  const [results, setResults] = useState(null);
-  const [searched, setSearched] = useState(false);
-
-  function upd(k, v) { setFilters(f => ({ ...f, [k]: v })); }
-
-  function search(e) {
-    e.preventDefault();
-    const rides = getRides();
-    let filtered = rides;
-    if (filters.college) filtered = filtered.filter(r => r.college === filters.college);
-    if (filters.date) filtered = filtered.filter(r => r.date === filters.date);
-    if (filters.vehicleType) filtered = filtered.filter(r => r.vehicleType === filters.vehicleType);
-    if (filters.gender && filters.gender !== 'Any') filtered = filtered.filter(r => r.gender === filters.gender || r.gender === 'Any');
-    setResults(filtered);
-    setSearched(true);
-  }
-
-  function handleBook() {
-    toast('Ride booked!', 'success');
-  }
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-xl font-bold text-slate-100 mb-1">Find a Ride</h2>
-        <p className="text-sm text-slate-400">Search available rides to your campus</p>
-      </div>
-
-      <form onSubmit={search} className="glass rounded-2xl p-4 space-y-3">
-        <div>
-          <label className="text-xs text-slate-400 mb-1 block">Destination College</label>
-          <select className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={filters.college} onChange={e => upd('college', e.target.value)}>
-            <option value="">All Colleges</option>
-            {COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Date</label>
-            <input type="date" className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={filters.date} onChange={e => upd('date', e.target.value)}/>
-          </div>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Vehicle</label>
-            <select className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={filters.vehicleType} onChange={e => upd('vehicleType', e.target.value)}>
-              <option value="">Any</option>
-              <option value="Car">Car</option>
-              <option value="Bike">Bike</option>
-            </select>
-          </div>
-        </div>
-        <div>
-          <label className="text-xs text-slate-400 mb-1 block">Gender Preference</label>
-          <select className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={filters.gender} onChange={e => upd('gender', e.target.value)}>
-            <option value="">Any</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-          </select>
-        </div>
-        <button type="submit" className="btn-primary w-full py-3 rounded-xl text-white font-semibold text-sm flex items-center justify-center gap-2">
-          <Icon name="search" size={16}/> Find Rides
-        </button>
-      </form>
-
-      {searched && (
-        <div className="space-y-3 fade-in">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-400">
-              {results.length > 0 ? `${results.length} ride${results.length !== 1 ? 's' : ''} found` : 'No rides found'}
-            </p>
-          </div>
-          {results.length === 0 ? (
-            <div className="glass rounded-2xl p-8 text-center">
-              <Icon name="search-x" size={40} className="text-slate-600 mx-auto mb-3"/>
-              <p className="text-slate-400 font-medium">No rides match your search</p>
-              <p className="text-slate-500 text-sm mt-1">Try adjusting your filters</p>
-            </div>
-          ) : (
-            results.map(r => <RideCard key={r.id} ride={r} currentUser={currentUser} onBook={handleBook}/>)
-          )}
-        </div>
-      )}
-
-      {!searched && (
-        <div className="glass rounded-2xl p-6 text-center">
-          <Icon name="map-pin" size={36} className="text-blue-500/60 mx-auto mb-2"/>
-          <p className="text-slate-400 text-sm">Use the search form above to find rides near you</p>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Map Component ────────────────────────────────────────────
-function RideMap({ pickup, destination }) {
-  const mapRef = useRef(null);
-  const mapInstanceRef = useRef(null);
-  const markersRef = useRef([]);
-  const polylineRef = useRef(null);
-  const debounceRef = useRef(null);
-  const [loading, setLoading] = useState(false);
-  const [distance, setDistance] = useState(null);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (!mapInstanceRef.current && mapRef.current) {
-      mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true }).setView([20.5937, 78.9629], 5);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-      }).addTo(mapInstanceRef.current);
-    }
-    return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; } };
-  }, []);
-
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!pickup && !destination) return;
-    debounceRef.current = setTimeout(() => geocodeAndDraw(), 800);
-    return () => clearTimeout(debounceRef.current);
-  }, [pickup, destination]);
-
-  async function geocode(query) {
-    const url = `https://us1.locationiq.com/v1/search?key=${LIQ_KEY}&q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=in`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Geocode failed');
-    const data = await res.json();
-    if (!data || data.length === 0) throw new Error('Not found');
-    return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-  }
-
-  function haversine([lat1, lon1], [lat2, lon2]) {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  }
-
-  async function geocodeAndDraw() {
-    if (!mapInstanceRef.current) return;
-    setLoading(true);
-    setError('');
-    markersRef.current.forEach(m => m.remove());
-    markersRef.current = [];
-    if (polylineRef.current) { polylineRef.current.remove(); polylineRef.current = null; }
-
-    try {
-      const coords = [];
-      if (pickup) {
-        const c = await geocode(pickup);
-        const redIcon = L.divIcon({ className:'', html:`<div style="width:22px;height:22px;background:#ef4444;border-radius:50% 50% 50% 0;border:2px solid white;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>`, iconSize:[22,22], iconAnchor:[11,22] });
-        const m = L.marker(c, { icon: redIcon }).addTo(mapInstanceRef.current).bindPopup(`<b>Pickup:</b> ${pickup}`);
-        markersRef.current.push(m);
-        coords.push(c);
+    ];
+    const todayStr = new Date().toISOString().split('T')[0];
+    const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const initialSchedules = [
+      {
+        _id: 's1',
+        userId: 'u1',
+        pickup: 'Powai Vihar, Mumbai',
+        destination: 'IIT Bombay Main Gate',
+        landmark: 'Near D-Mart Powai',
+        routeDescription: 'JVLR Road',
+        time: '08:30',
+        repeatType: 'EveryDay',
+        selectedDays: [],
+        selectedDates: [],
+        excludedDates: [],
+        seats: 4,
+        price: 60,
+        genderPreference: 'Any',
+        isActive: true
+      },
+      {
+        _id: 's2',
+        userId: 'u2',
+        pickup: 'Ghatkopar East Metro Station',
+        destination: 'IIT Bombay Hill Side Gate',
+        landmark: 'Exit 1 Metro',
+        routeDescription: 'Via Gandhi Nagar Bridge',
+        time: '09:00',
+        repeatType: 'Weekly',
+        selectedDays: [1, 3, 5],
+        selectedDates: [],
+        excludedDates: [],
+        seats: 1,
+        price: 40,
+        genderPreference: 'Female',
+        isActive: true
       }
-      if (destination) {
-        const c = await geocode(destination);
-        const greenIcon = L.divIcon({ className:'', html:`<div style="width:22px;height:22px;background:#22c55e;border-radius:50% 50% 50% 0;border:2px solid white;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>`, iconSize:[22,22], iconAnchor:[11,22] });
-        const m = L.marker(c, { icon: greenIcon }).addTo(mapInstanceRef.current).bindPopup(`<b>Destination:</b> ${destination}`);
-        markersRef.current.push(m);
-        coords.push(c);
+    ];
+    const initialRidePosts = [
+      {
+        _id: 'p1',
+        scheduleId: 's1',
+        driverId: 'u1',
+        rideDate: todayStr,
+        departureTime: '08:30',
+        pickup: 'Powai Vihar, Mumbai',
+        destination: 'IIT Bombay',
+        landmark: 'Near D-Mart Powai',
+        seatsAvailable: 2,
+        originalSeats: 4,
+        price: 60,
+        phone: '+91 98765 43210',
+        instagramId: '@aarav_sharma',
+        status: 'Active',
+        genderPreference: 'Any',
+        joinedRiders: [{ riderId: 'u3', bookingId: 'b1', seatsBooked: 2 }]
+      },
+      {
+        _id: 'p2',
+        scheduleId: 's1',
+        driverId: 'u1',
+        rideDate: tomorrowStr,
+        departureTime: '08:30',
+        pickup: 'Powai Vihar, Mumbai',
+        destination: 'IIT Bombay',
+        landmark: 'Near D-Mart Powai',
+        seatsAvailable: 4,
+        originalSeats: 4,
+        price: 60,
+        phone: '+91 98765 43210',
+        instagramId: '@aarav_sharma',
+        status: 'Active',
+        genderPreference: 'Any',
+        joinedRiders: []
+      },
+      {
+        _id: 'p3',
+        scheduleId: 's2',
+        driverId: 'u2',
+        rideDate: todayStr,
+        departureTime: '09:00',
+        pickup: 'Ghatkopar East Metro Station',
+        destination: 'IIT Bombay',
+        landmark: 'Exit 1 Metro',
+        seatsAvailable: 1,
+        originalSeats: 1,
+        price: 40,
+        phone: '+91 91234 56789',
+        instagramId: '@ananya_iyer',
+        status: 'Active',
+        genderPreference: 'Female',
+        joinedRiders: []
+      },
+      {
+        _id: 'p4',
+        scheduleId: 's1',
+        driverId: 'u4',
+        rideDate: todayStr,
+        departureTime: '07:45',
+        pickup: 'Connaught Place, Delhi',
+        destination: 'Delhi University (DU)',
+        landmark: 'Near Palika Bazaar',
+        seatsAvailable: 3,
+        originalSeats: 4,
+        price: 80,
+        phone: '+91 93333 22222',
+        instagramId: '@sneha_p',
+        status: 'Active',
+        genderPreference: 'Any',
+        joinedRiders: []
+      },
+      {
+        _id: 'p5',
+        scheduleId: 's1',
+        driverId: 'u4',
+        rideDate: tomorrowStr,
+        departureTime: '08:00',
+        pickup: 'Rajouri Garden Metro, Delhi',
+        destination: 'Delhi University (DU)',
+        landmark: 'Bus Stop Gate 2',
+        seatsAvailable: 2,
+        originalSeats: 4,
+        price: 70,
+        phone: '+91 93333 22222',
+        instagramId: '@sneha_p',
+        status: 'Active',
+        genderPreference: 'Any',
+        joinedRiders: []
       }
-      if (coords.length === 2) {
-        polylineRef.current = L.polyline(coords, { color:'#3b82f6', weight:4, opacity:0.8, dashArray:'8,6' }).addTo(mapInstanceRef.current);
-        const d = haversine(coords[0], coords[1]);
-        setDistance(d.toFixed(1));
-        mapInstanceRef.current.fitBounds(L.latLngBounds(coords), { padding:[30,30] });
-      } else if (coords.length === 1) {
-        mapInstanceRef.current.setView(coords[0], 13);
+    ];
+    const initialBookings = [
+      {
+        _id: 'b1',
+        riderId: 'u3',
+        rideId: 'p1',
+        seatsBooked: 2,
+        paymentStatus: 'Paid',
+        paymentDetails: { upiId: 'rohan@okaxis', transactionId: 'TXN-CAMPUS-98271' },
+        status: 'Accepted'
       }
-    } catch(e) {
-      setError('Could not geocode location');
-    }
-    setLoading(false);
-  }
-
-  return (
-    <div className="relative">
-      <div ref={mapRef} id="map"/>
-      {loading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 rounded-xl z-10">
-          <div className="flex items-center gap-2 text-blue-400">
-            <Icon name="loader-2" size={20} className="animate-spin"/>
-            <span className="text-sm">Finding route...</span>
-          </div>
-        </div>
-      )}
-      {distance && !loading && (
-        <div className="absolute bottom-3 left-3 z-10 bg-slate-900/90 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-slate-700">
-          <Icon name="route" size={12} className="text-blue-400"/>
-          ~{distance} km
-        </div>
-      )}
-      {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
-    </div>
-  );
-}
-
-// ─── Post Ride Tab ────────────────────────────────────────────
-function PostRideTab({ currentUser, toast }) {
-  const [form, setForm] = useState({
-    pickup:'', destination:'', landmark:'', route:'',
-    time:'', seats:1, price:'', gender:'Any',
-    vehicleType:'', vehicleModel:'', vehicleImg:null,
-    phone:'', instagram:'',
-    schedule:'Today'
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const fileRef = useRef(null);
-
-  function upd(k, v) { setForm(f => ({ ...f, [k]: v })); }
-
-  function handleFileChange(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = ev => upd('vehicleImg', ev.target.result);
-    reader.readAsDataURL(file);
-  }
-
-  function getDate() {
-    if (form.schedule === 'Today') return getTodayStr();
-    if (form.schedule === 'Tomorrow') return getTomorrowStr();
-    return getTodayStr();
-  }
-
-  function submit(e) {
-    e.preventDefault();
-    if (!form.pickup || !form.destination || !form.time || !form.price) {
-      toast('Please fill in all required fields', 'error'); return;
-    }
-    if (!form.vehicleType) { toast('Please select a vehicle type', 'error'); return; }
-    if (!form.vehicleModel) { toast('Please enter your vehicle model', 'error'); return; }
-    if (!form.phone && !form.instagram) { toast('Please provide at least one contact method', 'error'); return; }
-
-    setSubmitting(true);
-    setTimeout(() => {
-      const ride = {
-        id: 'r_' + Date.now(),
-        userId: currentUser.id,
-        driverName: currentUser.name,
-        driverAvatar: currentUser.avatar,
-        college: form.destination,
-        pickup: form.pickup,
-        destination: form.destination,
-        landmark: form.landmark,
-        route: form.route,
-        date: getDate(),
-        time: form.time,
-        seats: Number(form.seats),
-        price: Number(form.price),
-        gender: form.gender,
-        vehicleType: form.vehicleType,
-        vehicleModel: form.vehicleModel,
-        vehicleImg: form.vehicleImg,
-        phone: form.phone,
-        instagram: form.instagram,
-        schedule: form.schedule,
-      };
-      const rides = getRides();
-      saveRides([...rides, ride]);
-      supabaseInsert('rides', { ...ride, vehicle_img: null });
-      toast('Ride posted successfully!', 'success');
-      setSubmitting(false);
-      setSubmitted(true);
-      setTimeout(() => setSubmitted(false), 3000);
-      setForm({ pickup:'', destination:'', landmark:'', route:'', time:'', seats:1, price:'', gender:'Any', vehicleType:'', vehicleModel:'', vehicleImg:null, phone:'', instagram:'', schedule:'Today' });
-    }, 700);
-  }
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-xl font-bold text-slate-100 mb-1">Post a Ride</h2>
-        <p className="text-sm text-slate-400">Share your ride with fellow students</p>
-      </div>
-
-      {submitted && (
-        <div className="glass rounded-2xl p-4 border border-emerald-500/30 bg-emerald-500/10 flex items-center gap-3 fade-in">
-          <Icon name="check-circle" size={20} className="text-emerald-400"/>
-          <p className="text-emerald-400 font-medium text-sm">Ride posted! Check it in your dashboard.</p>
-        </div>
-      )}
-
-      <form onSubmit={submit} className="space-y-4">
-        {/* Route */}
-        <div className="glass rounded-2xl p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Icon name="route" size={15} className="text-blue-400"/> Route Details</h3>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Pickup Location *</label>
-            <input className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder="e.g. Powai Lake Gate" value={form.pickup} onChange={e => upd('pickup', e.target.value)}/>
-          </div>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Destination Campus *</label>
-            <select className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={form.destination} onChange={e => upd('destination', e.target.value)}>
-              <option value="">Select college</option>
-              {COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Landmark</label>
-            <input className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder="e.g. Near McDonald's" value={form.landmark} onChange={e => upd('landmark', e.target.value)}/>
-          </div>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Route Description</label>
-            <input className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder="e.g. Powai → JVLR → IIT Gate" value={form.route} onChange={e => upd('route', e.target.value)}/>
-          </div>
-        </div>
-
-        {/* Map Preview */}
-        {(form.pickup || form.destination) && (
-          <div className="glass rounded-2xl p-4 fade-in">
-            <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><Icon name="map" size={15} className="text-blue-400"/> Route Preview</h3>
-            <RideMap pickup={form.pickup} destination={form.destination}/>
-          </div>
-        )}
-
-        {/* Schedule */}
-        <div className="glass rounded-2xl p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Icon name="calendar" size={15} className="text-blue-400"/> Schedule</h3>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Schedule Type</label>
-            <div className="grid grid-cols-4 gap-2">
-              {['Today','Tomorrow','EveryDay','Weekly'].map(s => (
-                <button key={s} type="button" onClick={() => upd('schedule', s)}
-                  className={`text-xs py-2 rounded-xl font-medium border transition-all ${form.schedule === s ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'border-slate-700 text-slate-400 hover:border-slate-500'}`}>
-                  {s}
-                </button>
-              ))}
+    ];
+    const initialMessages = [
+      {
+        _id: 'm1',
+        chatId: 'u1_u3',
+        senderId: 'u3',
+        receiverId: 'u1',
+        text: 'Hey Aarav! Can I join your carpool tomorrow morning?',
+        createdAt: new Date().toISOString(),
+        isSeen: true
+      },
+      {
+        _id: 'm2',
+        chatId: 'u1_u3',
+        senderId: 'u1',
+        receiverId: 'u3',
+        text: 'Sure Rohan! I have 4 empty seats. Just request to join on the app.',
+        createdAt: new Date().toISOString(),
+        isSeen: true
+      }
+    ];
+    // ----------------------------------------------------
+    // INTERACTIVE MAP COMPONENT (LEAFLET + LOCATIONIQ)
+    // ----------------------------------------------------
+    function InteractiveMap({ pickup = 'Powai Vihar, Mumbai', destination = 'IIT Bombay', height = '200px' }) {
+      const [mapType, setMapType] = useState(window.L ? 'leaflet' : 'vector'); // Default to live leaflet map if loaded
+      const [carPosition, setCarPosition] = useState(0);
+      const leafletMapRef = useRef(null);
+      const mapContainerId = useRef(`map-${Math.random().toString(36).substr(2, 9)}`);
+      useEffect(() => {
+        const interval = setInterval(() => {
+          setCarPosition((prev) => (prev >= 100 ? 0 : prev + 0.5));
+        }, 40);
+        return () => clearInterval(interval);
+      }, []);
+      useEffect(() => {
+        let active = true;
+        if (mapType === 'leaflet' && window.L) {
+          try {
+            if (leafletMapRef.current) {
+              leafletMapRef.current.remove();
+            }
+            // Default center coordinates (Mumbai IIT area)
+            const centerCoords = [19.1256, 72.9156];
+            const map = window.L.map(mapContainerId.current).setView(centerCoords, 13);
+            leafletMapRef.current = map;
+            window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+            // Custom modern icons
+            const pickIcon = window.L.divIcon({
+              html: `<div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background-color: #ef4444; border-radius: 50%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 2px solid white;"><span style="font-size: 14px;">📍</span></div>`,
+              className: 'custom-map-marker-pickup',
+              iconSize: [32, 32],
+              iconAnchor: [16, 32]
+            });
+const destIcon = window.L.divIcon({
+              html: `<div style="display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; background-color: #10b981; border-radius: 50%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 2px solid white;"><span style="font-size: 14px;">🎓</span></div>`,
+              className: 'custom-map-marker-dest',
+              iconSize: [32, 32],
+              iconAnchor: [16, 32]
+            });
+            const geocode = async () => {
+              try {
+                let pickLatLng = [19.1230, 72.9080];
+                let destLatLng = [19.1330, 72.9150];
+                const resPick = await fetch(`https://us1.locationiq.com/v1/search.php?key=pk.481323876891a2b0607386a3ef75c7a0&q=${encodeURIComponent(pickup + ', India')}&format=json`);
+                if (resPick.ok) {
+                  const data = await resPick.json();
+                  if (data && data[0]) {
+                    pickLatLng = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+                  }
+                }
+                const resDest = await fetch(`https://us1.locationiq.com/v1/search.php?key=pk.481323876891a2b0607386a3ef75c7a0&q=${encodeURIComponent(destination + ', India')}&format=json`);
+                if (resDest.ok) {
+                  const data = await resDest.json();
+                  if (data && data[0]) {
+                    destLatLng = [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+                  }
+                }
+                if (!active) return;
+                window.L.marker(pickLatLng, { icon: pickIcon }).addTo(map).bindPopup(`<b>Pickup:</b> ${pickup}`).openPopup();
+                window.L.marker(destLatLng, { icon: destIcon }).addTo(map).bindPopup(`<b>Destination:</b> ${destination}`);
+                const bounds = window.L.latLngBounds([pickLatLng, destLatLng]);
+                map.fitBounds(bounds, { padding: [40, 40] });
+                window.L.polyline([pickLatLng, destLatLng], { color: '#6366f1', weight: 5, opacity: 0.9, lineJoin: 'round' }).addTo(map);
+              } catch (err) {
+                console.error('LocationIQ geocoding failed, using defaults:', err);
+                if (!active) return;
+                window.L.marker([19.123, 72.908], { icon: pickIcon }).addTo(map).bindPopup(`<b>Pickup:</b> ${pickup}`).openPopup();
+                window.L.marker([19.133, 72.915], { icon: destIcon }).addTo(map).bindPopup(`<b>Destination:</b> ${destination}`);
+                window.L.polyline([[19.123, 72.908], [19.133, 72.915]], { color: '#6366f1', weight: 5, opacity: 0.9, lineJoin: 'round' }).addTo(map);
+              }
+            };
+            geocode();
+          } catch (err) {
+            console.error('Leaflet initialization failed:', err);
+            setMapType('vector');
+          }
+        }
+        return () => {
+          active = false;
+        };
+      }, [mapType, pickup, destination]);
+      return (
+        <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-inner dark:border-slate-800 dark:bg-slate-900" style={{ height }}>
+          {/* Map Header Selector */}
+          <div className="absolute top-3 left-3 right-3 z-[1000] flex items-center justify-between pointer-events-none">
+            <div className="flex items-center gap-1.5 rounded-xl bg-white/95 px-3 py-1.5 text-[10px] font-bold text-slate-800 shadow-premium dark:bg-slate-900/95 dark:text-slate-100 pointer-events-auto border border-slate-100 dark:border-slate-850">
+              <span className="text-brand-500 animate-pulse">📍</span>
+              <span>Active Route View</span>
+            </div>
+            <div className="flex gap-1 rounded-xl bg-white/95 p-1 shadow-premium dark:bg-slate-900/95 pointer-events-auto border border-slate-100 dark:border-slate-850">
+              <button
+                type="button"
+                onClick={() => setMapType('vector')}
+                className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition-all duration-200 ${
+                  mapType === 'vector' 
+                    ? 'bg-brand-500 text-white' 
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                Schematic
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.L) {
+                    setMapType('leaflet');
+                  } else {
+                    alert('Leaflet Map library is offline or loading. Using schematic view instead.');
+                  }
+                }}
+                className={`rounded-lg px-2.5 py-1 text-[10px] font-bold transition-all duration-200 ${
+                  mapType === 'leaflet' 
+                    ? 'bg-brand-500 text-white' 
+                    : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                }`}
+              >
+                Live Map
+              </button>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-slate-400 mb-1 block">Departure Time *</label>
-              <input type="time" className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={form.time} onChange={e => upd('time', e.target.value)}/>
-            </div>
-            <div>
-              <label className="text-xs text-slate-400 mb-1 block">Available Seats</label>
-              <input type="number" min="1" max="8" className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={form.seats} onChange={e => upd('seats', e.target.value)}/>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-slate-400 mb-1 block">Price per Seat (₹) *</label>
-              <input type="number" min="0" className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder="e.g. 60" value={form.price} onChange={e => upd('price', e.target.value)}/>
-            </div>
-            <div>
-              <label className="text-xs text-slate-400 mb-1 block">Gender Preference</label>
-              <select className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={form.gender} onChange={e => upd('gender', e.target.value)}>
-                <option value="Any">Any</option>
-                <option value="Male">Male only</option>
-                <option value="Female">Female only</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        {/* Vehicle */}
-        <div className="glass rounded-2xl p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Icon name="car" size={15} className="text-blue-400"/> Vehicle Details</h3>
-          <div>
-            <label className="text-xs text-slate-400 mb-2 block">Vehicle Type *</label>
-            <div className="grid grid-cols-2 gap-3">
-              {[{type:'Car', icon:'car'},{type:'Bike', icon:'bike'}].map(v => (
-                <div key={v.type} onClick={() => upd('vehicleType', v.type)}
-                  className={`vehicle-card glass-light rounded-xl p-4 flex flex-col items-center gap-2 border-2 ${form.vehicleType === v.type ? 'selected border-blue-500' : 'border-transparent'}`}>
-                  <Icon name={v.icon} size={28} className={form.vehicleType === v.type ? 'text-blue-400' : 'text-slate-400'}/>
-                  <span className={`text-sm font-semibold ${form.vehicleType === v.type ? 'text-blue-400' : 'text-slate-400'}`}>{v.type}</span>
+          {/* RENDER ENGINE 1: LEAFLET MAP */}
+          {mapType === 'leaflet' && (
+            <div id={mapContainerId.current} className="w-full h-full z-10"></div>
+          )}
+          {/* RENDER ENGINE 2: PREMIUM VECTOR SCHEMATIC MAP */}
+          {mapType === 'vector' && (
+            <div className="relative w-full h-full bg-[#eef2f6] dark:bg-slate-950 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-[linear-gradient(to_right,#cbd5e1_1px,transparent_1px),linear-gradient(to_bottom,#cbd5e1_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:24px_24px] opacity-40"></div>
+              <svg className="w-full h-full max-h-[300px] z-10" viewBox="0 0 400 200">
+                <rect x="20" y="20" width="80" height="50" rx="6" fill="#10b981" fillOpacity="0.08" stroke="#10b981" strokeOpacity="0.15" />
+                <rect x="280" y="120" width="100" height="60" rx="6" fill="#10b981" fillOpacity="0.08" stroke="#10b981" strokeOpacity="0.15" />
+                <rect x="260" y="15" width="120" height="90" rx="10" fill="#3b82f6" fillOpacity="0.03" stroke="#3b82f6" strokeOpacity="0.1" strokeDasharray="4" />
+                <text x="320" y="32" textAnchor="middle" className="text-[8px] font-bold fill-brand-500/60 dark:fill-brand-400/50">CAMPUS ZONE</text>
+                <path d="M 40 150 L 160 150 L 160 50 L 320 50 L 320 120" fill="none" stroke="#94a3b8" strokeWidth="12" strokeLinecap="round" strokeLinejoin="round" className="dark:stroke-slate-800" />
+                <path d="M 40 150 L 160 150 L 160 50 L 320 50 L 320 120" fill="none" stroke="#fff" strokeWidth="2" strokeDasharray="6 4" strokeLinecap="round" strokeLinejoin="round" className="dark:stroke-slate-600" />
+                <path d="M 160 150 L 280 150" fill="none" stroke="#94a3b8" strokeWidth="8" strokeLinecap="round" className="dark:stroke-slate-800" />
+                <path d="M 320 50 L 380 50" fill="none" stroke="#94a3b8" strokeWidth="8" strokeLinecap="round" className="dark:stroke-slate-800" />
+                <path id="ride-route" d="M 40 150 L 160 150 L 160 50 L 320 50" fill="none" stroke="#3b82f6" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" className="opacity-80" />
+                <text x="70" y="175" className="text-[7px] font-bold fill-slate-500 dark:fill-slate-400">Metro Station</text>
+                <text x="210" y="165" className="text-[7px] font-bold fill-slate-500 dark:fill-slate-400">Highway Hub</text>
+                <text x="320" y="145" className="text-[7px] font-bold fill-slate-500 dark:fill-slate-400">{destination}</text>
+                <g transform="translate(40, 150)">
+                  <circle r="12" fill="#ef4444" fillOpacity="0.15" />
+                  <circle r="6" fill="#ef4444" />
+                  <circle r="2" fill="#fff" />
+                </g>
+                <text x="40" y="132" textAnchor="middle" className="text-[8px] font-extrabold fill-red-500 dark:fill-red-400">Pickup: {pickup}</text>
+                <g transform="translate(320, 50)">
+                  <circle r="10" fill="#10b981" fillOpacity="0.15" />
+                  <circle r="6" fill="#10b981" />
+                  <circle r="2" fill="#fff" />
+                </g>
+                <text x="320" y="38" textAnchor="middle" className="text-[8px] font-extrabold fill-emerald-500 dark:fill-emerald-400">College Goal</text>
+                <g transform="translate(40, 150)">
+                  <animateMotion dur="8s" repeatCount="indefinite" path="M 0 0 L 120 0 L 120 -100 L 280 -100" />
+                  <circle r="8" fill="#3b82f6" />
+                  <text y="2.5" textAnchor="middle" className="text-[7px] fill-white">🚗</text>
+                </g>
+              </svg>
+              <div className="absolute bottom-3 left-3 right-3 z-20 flex justify-between bg-white/90 p-2.5 rounded-xl shadow-premium border border-slate-100 dark:bg-slate-900/90 dark:border-slate-800 backdrop-blur-md">
+                <div className="flex flex-col">
+                  <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">From Location</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
+                    <span>📍</span> {pickup}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
-          {form.vehicleType && (
-            <div className="fade-in">
-              <label className="text-xs text-slate-400 mb-1 block">Vehicle Model *</label>
-              <input className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder={form.vehicleType === 'Bike' ? 'e.g. Honda Activa' : 'e.g. Maruti Swift'} value={form.vehicleModel} onChange={e => upd('vehicleModel', e.target.value)}/>
+                <div className="flex flex-col text-right">
+                  <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">College Destination</span>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 justify-end">
+                    <span>🧭</span> {destination}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
-          {form.vehicleType && (
-            <div className="fade-in">
-              <label className="text-xs text-slate-400 mb-1 block">Vehicle Photo</label>
-              <div onClick={() => fileRef.current?.click()}
-                className="border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-xl p-4 text-center cursor-pointer transition-colors">
-                {form.vehicleImg ? (
-                  <img src={form.vehicleImg} alt="Vehicle preview" className="h-28 w-full object-cover rounded-lg"/>
+        </div>
+      );
+    }
+      // Colleges list
+      const initialColleges = [
+        { name: 'IIT Bombay' },
+        { name: 'Delhi University (DU)' },
+        { name: 'BITS Pilani' },
+        { name: 'RV College of Engineering' },
+        { name: 'COEP Pune' },
+        { name: 'IIT Delhi' },
+        { name: 'IIT Madras' },
+        { name: 'IIT Kharagpur' },
+        { name: 'BITS Goa' },
+        { name: 'BITS Hyderabad' },
+        { name: 'DTU Delhi' },
+        { name: 'VIT Vellore' },
+        { name: 'MIT Manipal' },
+        { name: 'SRM University' },
+        { name: 'Anna University' },
+        { name: 'Jadavpur University' },
+        { name: 'NIT Trichy' },
+        { name: 'NIT Surathkal' },
+        { name: 'IIT Roorkee' },
+        { name: 'IIT Guwahati' },
+        { name: 'IIT Kanpur' },
+        { name: 'IIIT Delhi' },
+        { name: 'NSUT Delhi' },
+        { name: 'NIT Warangal' },
+        { name: 'NIT Rourkela' },
+        { name: 'PES University' },
+        { name: 'New Horizon College of Engineering' },
+        { name: 'Dayananda Sagar College of Engineering' },
+        { name: 'MSRIT Bangalore' },
+        { name: 'BMS College of Engineering' },
+        { name: 'PSG College of Technology' },
+        { name: 'College of Engineering Guindy' },
+        { name: 'VIT Chennai' },
+        { name: 'Manipal University Jaipur' },
+        { name: 'Thapar Institute of Engineering and Technology' },
+        { name: 'KIIT University Bhubaneswar' },
+        { name: 'Amity University Noida' },
+        { name: 'LPU Punjab' },
+        { name: 'Christ University Bangalore' },
+        { name: 'Symbiosis International University Pune' },
+        { name: 'PEC Chandigarh' },
+        { name: 'HBTU Kanpur' }
+      ];
+    // ----------------------------------------------------
+    // SUPABASE CLOUD REST CONNECTION
+    // ----------------------------------------------------
+    const SUPABASE_URL = "https://bjdpfsgfyjmdpioxcgpm.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_pVjsFSffW9oykqxmywOdkQ_D43QCnN6";
+    const SUPABASE_HEADERS = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json'
+    };
+    const upsertSupabaseCloud = async (table, id, data) => {
+      try {
+        const resCheck = await fetch(`${SUPABASE_URL}/rest/v1/${table}?_id=eq.${id}&select=_id`, { headers: SUPABASE_HEADERS });
+        const exists = await resCheck.json();
+        if (exists && exists.length > 0) {
+          const { _id, createdAt, ...payload } = data;
+          await fetch(`${SUPABASE_URL}/rest/v1/${table}?_id=eq.${id}`, {
+            method: 'PATCH',
+            headers: SUPABASE_HEADERS,
+            body: JSON.stringify(payload)
+          });
+        } else {
+          await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+            method: 'POST',
+            headers: SUPABASE_HEADERS,
+            body: JSON.stringify(data)
+          });
+        }
+      } catch (e) {
+        console.warn(`[Supabase] Failed to upsert ${table}/${id} to cloud:`, e);
+      }
+    };
+    // ----------------------------------------------------
+    // MAIN APP COMPONENT
+    // ----------------------------------------------------
+    function App() {
+      // Data version — bump this string whenever initial data schema changes
+      // so stale LocalStorage caches are automatically cleared.
+      const DATA_VERSION = 'v3';
+      if (localStorage.getItem('cr_data_version') !== DATA_VERSION) {
+        localStorage.removeItem('cr_posts');
+        localStorage.removeItem('cr_users');
+        localStorage.removeItem('cr_schedules');
+        localStorage.removeItem('cr_bookings');
+        localStorage.setItem('cr_data_version', DATA_VERSION);
+      }
+      // Global App states loaded from LocalStorage or Default Mock (used as fallback)
+      const [users, setUsers] = useState(() => JSON.parse(localStorage.getItem('cr_users')) || initialUsers);
+      const [schedules, setSchedules] = useState(() => JSON.parse(localStorage.getItem('cr_schedules')) || initialSchedules);
+      const [ridePosts, setRidePosts] = useState(() => JSON.parse(localStorage.getItem('cr_posts')) || initialRidePosts);
+      const [bookings, setBookings] = useState(() => JSON.parse(localStorage.getItem('cr_bookings')) || initialBookings);
+      const [messages, setMessages] = useState(() => JSON.parse(localStorage.getItem('cr_messages')) || initialMessages);
+      const [colleges, setColleges] = useState(() => {
+        const stored = JSON.parse(localStorage.getItem('cr_colleges'));
+        if (stored && stored.length >= initialColleges.length) {
+          return stored;
+        }
+        return initialColleges;
+      });
+      
+      const [currentUser, setCurrentUser] = useState(() => JSON.parse(localStorage.getItem('cr_current_user')) || null);
+      const [theme, setTheme] = useState(() => localStorage.getItem('cr_theme') || 'light');
+      const [currentPage, setCurrentPage] = useState('landing'); // landing, auth, dashboard, find-ride, post-ride, chat, profile, admin
+      
+      const [notifications, setNotifications] = useState([]);
+      const [chatStatePartnerId, setChatStatePartnerId] = useState(null); // to pass navigation data
+      // ----------------------------------------------------
+      // SUPABASE SYNC AND SEED HELPERS
+      // ----------------------------------------------------
+      const seedSupabaseCloud = async () => {
+        try {
+          await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+            method: 'POST',
+            headers: SUPABASE_HEADERS,
+            body: JSON.stringify(initialUsers)
+          });
+          await fetch(`${SUPABASE_URL}/rest/v1/rideschedules`, {
+            method: 'POST',
+            headers: SUPABASE_HEADERS,
+            body: JSON.stringify(initialSchedules)
+          });
+          await fetch(`${SUPABASE_URL}/rest/v1/rideposts`, {
+            method: 'POST',
+            headers: SUPABASE_HEADERS,
+            body: JSON.stringify(initialRidePosts)
+          });
+          await fetch(`${SUPABASE_URL}/rest/v1/bookings`, {
+            method: 'POST',
+            headers: SUPABASE_HEADERS,
+            body: JSON.stringify(initialBookings)
+          });
+          console.log("[Supabase] Cloud database seeded successfully!");
+        } catch (err) {
+          console.error("[Supabase] Failed to seed cloud database:", err);
+        }
+      };
+      // Attempt to load from Supabase on mount
+      useEffect(() => {
+        const loadFromSupabase = async () => {
+          try {
+            const resUsers = await fetch(`${SUPABASE_URL}/rest/v1/users?select=*`, { headers: SUPABASE_HEADERS });
+            if (!resUsers.ok) throw new Error(`Users fetch status: ${resUsers.status}`);
+            const dataUsers = await resUsers.json();
+            
+            const resScheds = await fetch(`${SUPABASE_URL}/rest/v1/rideschedules?select=*`, { headers: SUPABASE_HEADERS });
+            const dataScheds = await resScheds.json();
+            
+            const resPosts = await fetch(`${SUPABASE_URL}/rest/v1/rideposts?select=*`, { headers: SUPABASE_HEADERS });
+            const dataPosts = await resPosts.json();
+            
+            const resBookings = await fetch(`${SUPABASE_URL}/rest/v1/bookings?select=*`, { headers: SUPABASE_HEADERS });
+            const dataBookings = await resBookings.json();
+            if (dataUsers.length === 0) {
+              await seedSupabaseCloud();
+              setUsers(initialUsers);
+              setSchedules(initialSchedules);
+              setRidePosts(initialRidePosts);
+              setBookings(initialBookings);
+            } else {
+              setUsers(dataUsers);
+              setSchedules(dataScheds);
+              setRidePosts(dataPosts);
+              setBookings(dataBookings);
+              console.log("[Supabase] Cloud data synchronized successfully!");
+            }
+          } catch (err) {
+            console.warn("[Supabase] Failed to load cloud database. Using LocalStorage fallback:", err);
+          }
+        };
+        loadFromSupabase();
+      }, []);
+      // Synchronize local persistence fallback
+      useEffect(() => {
+        localStorage.setItem('cr_users', JSON.stringify(users));
+        localStorage.setItem('cr_schedules', JSON.stringify(schedules));
+        localStorage.setItem('cr_posts', JSON.stringify(ridePosts));
+        localStorage.setItem('cr_bookings', JSON.stringify(bookings));
+        localStorage.setItem('cr_messages', JSON.stringify(messages));
+        localStorage.setItem('cr_colleges', JSON.stringify(colleges));
+        localStorage.setItem('cr_current_user', JSON.stringify(currentUser));
+      }, [users, schedules, ridePosts, bookings, messages, colleges, currentUser]);
+      useEffect(() => {
+        const root = document.documentElement;
+        if (theme === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+        localStorage.setItem('cr_theme', theme);
+      }, [theme]);
+      const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
+      const addNotification = (notif) => {
+        setNotifications(prev => [{ id: Math.random().toString(), ...notif }, ...prev].slice(0, 10));
+      };
+      const handleLogin = (email, password) => {
+        const found = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (!found) {
+          // Dynamic auto-registration for frictionless demo sandbox!
+          const name = email.split('@')[0];
+          const displayName = name.charAt(0).toUpperCase() + name.slice(1);
+          const newId = 'u' + (users.length + 1);
+          const newUser = {
+            _id: newId,
+            name: displayName,
+            college: 'IIT Bombay',
+            email: email,
+            phone: '+91 99999 99999',
+            password: password || '',
+            instagramId: '',
+            profilePhoto: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(displayName)}`,
+            vehicleDetails: { type: 'None', model: '', number: '' },
+            isVerified: true,
+            isBanned: false,
+            emergencyContact: '',
+            ratings: [],
+            averageRating: 5.0,
+            savedFuelEstimate: 0
+          };
+          setUsers(prev => [...prev, newUser]);
+          setCurrentUser(newUser);
+          setCurrentPage('dashboard');
+          addNotification({ title: 'Welcome to CampusRide!', message: `Created dynamic account for ${displayName}` });
+          upsertSupabaseCloud('users', newId, newUser);
+          return;
+        }
+        if (found.isBanned) {
+          throw new Error('This account has been banned for safety reports.');
+        }
+        if (found.password && found.password !== password) {
+          throw new Error('Invalid password.');
+        }
+        setCurrentUser(found);
+        setCurrentPage('dashboard');
+        addNotification({ title: 'Welcome Back!', message: `Logged in as ${found.name}` });
+      };
+      const handleRegister = (formData) => {
+        const emailExists = users.some(u => u.email.toLowerCase() === formData.email.toLowerCase());
+        if (emailExists) throw new Error('Email already registered.');
+        const newId = 'u' + (users.length + 1);
+        const newUser = {
+          _id: newId,
+          name: formData.name,
+          college: formData.college,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password || '',
+          instagramId: formData.instagramId ? (formData.instagramId.startsWith('@') ? formData.instagramId : `@${formData.instagramId}`) : '',
+          profilePhoto: `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(formData.name)}`,
+          vehicleDetails: {
+            type: formData.vehicleType || 'None',
+            model: formData.vehicleModel || '',
+            number: formData.vehicleNumber || ''
+          },
+          isVerified: true,
+          isBanned: false,
+          emergencyContact: '',
+          ratings: [],
+          averageRating: 5.0,
+          savedFuelEstimate: 0
+        };
+        setUsers(prev => [...prev, newUser]);
+        setCurrentUser(newUser);
+        setCurrentPage('dashboard');
+        addNotification({ title: 'Welcome to CampusRide!', message: `Student profile created successfully!` });
+        upsertSupabaseCloud('users', newId, newUser);
+      };
+      const handleLogout = () => {
+        setCurrentUser(null);
+        setCurrentPage('landing');
+        setNotifications([]);
+      };
+      return (
+        <div className="flex flex-col flex-grow">
+          {/* Header Navbar */}
+          <header className="sticky top-0 z-50 w-full glass-panel border-b border-slate-200/50 dark:border-slate-800/50">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+              <div className="flex h-16 items-center justify-between">
+                
+                {/* Logo */}
+                <div className="flex items-center">
+                  <button onClick={() => setCurrentPage('landing')} className="flex items-center gap-2 group text-left">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-brand-600 to-emerald-500 shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform duration-200">
+                      <span className="text-xl">🚗</span>
+                    </span>
+                    <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-brand-600 via-brand-500 to-emerald-500 bg-clip-text text-transparent dark:from-brand-400">
+                      CampusRide
+                    </span>
+                  </button>
+                </div>
+                {/* Navigation Links */}
+                <div className="hidden md:flex items-center space-x-2">
+                  <button 
+                    onClick={() => setCurrentPage('landing')} 
+                    className={`px-3 py-2 text-xs font-bold rounded-xl transition-all ${currentPage === 'landing' ? 'text-brand-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'}`}
+                  >
+                    Home
+                  </button>
+                  
+                  {currentUser && (
+                    <>
+                      <button 
+                        onClick={() => setCurrentPage('dashboard')} 
+                        className={`px-3 py-2 text-xs font-bold rounded-xl transition-all ${currentPage === 'dashboard' ? 'text-brand-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'}`}
+                      >
+                        Dashboard
+                      </button>
+                      <button 
+                        onClick={() => setCurrentPage('find-ride')} 
+                        className={`px-3 py-2 text-xs font-bold rounded-xl transition-all ${currentPage === 'find-ride' ? 'text-brand-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'}`}
+                      >
+                        Find Ride
+                      </button>
+                      <button 
+                        onClick={() => setCurrentPage('post-ride')} 
+                        className={`px-3 py-2 text-xs font-bold rounded-xl transition-all ${currentPage === 'post-ride' ? 'text-brand-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'}`}
+                      >
+                        Post Ride
+                      </button>
+                      {currentUser.email === 'admin@campusride.org' && (
+                        <button 
+                          onClick={() => setCurrentPage('admin')} 
+                          className={`px-3 py-2 text-xs font-bold rounded-xl transition-all ${currentPage === 'admin' ? 'text-brand-500' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900'}`}
+                        >
+                          Admin
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+                {/* Right controls */}
+                <div className="flex items-center gap-3">
+                  <button onClick={toggleTheme} className="p-2 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 transition-colors">
+                    {theme === 'light' ? <i data-lucide="moon"></i> : <i data-lucide="sun"></i>}
+                  </button>
+                  {currentUser ? (
+                    <div className="flex items-center gap-2 border-l pl-3 border-slate-200 dark:border-slate-800">
+                      <button onClick={() => setCurrentPage('profile')} className="flex items-center gap-2 group text-left">
+                        <img src={currentUser.profilePhoto} className="h-8 w-8 rounded-full border bg-slate-100" />
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-350 hidden sm:inline">
+                          {currentUser.name.split(' ')[0]}
+                        </span>
+                      </button>
+                      
+                      <button onClick={handleLogout} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl" title="Logout">
+                        <i data-lucide="log-out"></i>
+                      </button>
+                    </div>
+                  ) : (
+                    <button 
+                      onClick={() => setCurrentPage('auth')} 
+                      className="rounded-xl bg-gradient-to-tr from-brand-600 to-brand-500 px-4 py-2 text-xs font-bold text-white shadow-md shadow-brand-500/25 hover:from-brand-500 hover:to-brand-600 hover:shadow-lg transition-all"
+                    >
+                      Sign In
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </header>
+          {/* Page Routing */}
+          <main className="flex-grow">
+            {currentPage === 'landing' && <LandingPageUI onNavigate={setCurrentPage} currentUser={currentUser} />}
+            {currentPage === 'auth' && <AuthPageUI onLogin={handleLogin} onRegister={handleRegister} colleges={colleges} />}
+            {currentPage === 'dashboard' && (
+              <DashboardUI 
+                currentUser={currentUser} 
+                ridePosts={ridePosts} 
+                setRidePosts={setRidePosts} 
+                schedules={schedules} 
+                setSchedules={setSchedules}
+                bookings={bookings} 
+                setBookings={setBookings} 
+                users={users}
+                setUsers={setUsers}
+                addNotification={addNotification} 
+                onNavigate={setCurrentPage}
+                setChatPartner={setChatStatePartnerId}
+              />
+            )}
+            {currentPage === 'find-ride' && (
+              <FindRideUI 
+                currentUser={currentUser} 
+                ridePosts={ridePosts} 
+                bookings={bookings} 
+                setBookings={setBookings}
+                users={users}
+                addNotification={addNotification}
+                onNavigate={setCurrentPage}
+                setChatPartner={setChatStatePartnerId}
+                colleges={colleges}
+              />
+            )}
+            {currentPage === 'post-ride' && (
+              <PostRideUI 
+                currentUser={currentUser} 
+                schedules={schedules} 
+                setSchedules={setSchedules}
+                ridePosts={ridePosts}
+                setRidePosts={setRidePosts}
+                addNotification={addNotification}
+                onNavigate={setCurrentPage}
+                colleges={colleges}
+              />
+            )}
+            {currentPage === 'chat' && (
+              <div className="text-center py-20 text-slate-500">
+                In-app chat has been disabled. Please contact the classmate directly via phone or Instagram.
+              </div>
+            )}
+            {currentPage === 'profile' && (
+              <ProfileUI 
+                currentUser={currentUser} 
+                setCurrentUser={setCurrentUser} 
+                users={users} 
+                setUsers={setUsers} 
+                addNotification={addNotification} 
+              />
+            )}
+            {currentPage === 'admin' && (
+              <AdminPanelUI 
+                currentUser={currentUser} 
+                users={users} 
+                setUsers={setUsers} 
+                colleges={colleges} 
+                setColleges={setColleges} 
+              />
+            )}
+          </main>
+        </div>
+      );
+    }
+    // Refresh Lucide icons after rendering
+    function useLucideRefresh(trigger) {
+      useEffect(() => {
+        if (window.lucide) {
+          window.lucide.createIcons();
+        }
+      }, [trigger]);
+    }
+    // ----------------------------------------------------
+    // PAGE UI: LANDING PAGE
+    // ----------------------------------------------------
+    function LandingPageUI({ onNavigate, currentUser }) {
+      useLucideRefresh(true);
+      return (
+        <div className="relative overflow-hidden py-12">
+          {/* Hero Section */}
+          <div className="text-center max-w-4xl mx-auto px-4 pt-10 pb-16">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-3.5 py-1.5 text-xs font-bold text-brand-600 dark:bg-brand-950/40 dark:text-brand-400 mb-6 border border-brand-100/50">
+              <span className="flex h-2 w-2 rounded-full bg-accent-green animate-pulse"></span>
+              <span>VERIFIED CAMPUS COMMUTE ONLY</span>
+            </div>
+            <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-none">
+              Student Carpool Network
+            </h1>
+            <p className="mt-3 text-3xl sm:text-5xl font-extrabold bg-gradient-to-r from-brand-600 via-brand-500 to-emerald-500 bg-clip-text text-transparent dark:from-brand-400">
+              Travel together. Save fuel. Save money.
+            </p>
+            <p className="mt-6 text-sm sm:text-base text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+              Share empty car seats or bike rides with students from your campus going in the same direction. Split fuel expenses directly via UPI. Safe, verified, and friendly.
+            </p>
+            <div className="mt-8 flex justify-center gap-3.5">
+              <button 
+                onClick={() => onNavigate(currentUser ? 'find-ride' : 'auth')}
+                className="bg-brand-500 text-white font-bold py-3.5 px-8 rounded-2xl shadow-lg hover:bg-brand-600 transition-all flex items-center gap-2"
+              >
+                <span>Find Ride</span>
+                <i data-lucide="arrow-right" className="h-4 w-4"></i>
+              </button>
+              
+              <button 
+                onClick={() => onNavigate(currentUser ? 'post-ride' : 'auth')}
+                className="bg-white border border-slate-200 text-slate-700 font-bold py-3.5 px-8 rounded-2xl hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-200 transition-all"
+              >
+                Post Ride
+              </button>
+            </div>
+          </div>
+          {/* Stats Bar */}
+          <div className="max-w-6xl mx-auto px-4 mb-16">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 glass-card rounded-3xl text-center">
+              <div>
+                <span className="text-2xl font-extrabold text-brand-500">5,000+</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mt-1">Verified Classmates</span>
+              </div>
+              <div>
+                <span className="text-2xl font-extrabold text-emerald-500">12,000 L</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mt-1">Total Fuel Saved</span>
+              </div>
+              <div>
+                <span className="text-2xl font-extrabold text-brand-500">₹4.5 Lakhs</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mt-1">Cash Shared</span>
+              </div>
+              <div>
+                <span className="text-2xl font-extrabold text-yellow-500">4.9/5 ⭐</span>
+                <span className="text-[10px] uppercase font-bold text-slate-400 block mt-1">Average rating</span>
+              </div>
+            </div>
+          </div>
+          {/* Safety section */}
+          <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center border-t dark:border-slate-900 pt-16">
+            <div>
+              <span className="text-xs font-bold uppercase tracking-widest text-brand-500">Safety Policy</span>
+              <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">100% Verified Campus Commute</h2>
+              <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                CampusRide is restricted to college students. Unlike general ride networks, security is built around the student community.
+              </p>
+              
+              <div className="mt-6 space-y-4">
+                <div className="flex gap-3">
+                  <span className="h-8 w-8 rounded-lg bg-brand-50 text-brand-500 flex items-center justify-center shrink-0">
+                    <i data-lucide="shield-check" className="h-4 w-4"></i>
+                  </span>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200">College Email Validation</h4>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Registration requires validation checks on institution domain emails.</p>
+                  </div>
+                </div>
+                
+                <div className="flex gap-3">
+                  <span className="h-8 w-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                    <i data-lucide="phone" className="h-4 w-4"></i>
+                  </span>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-200">Privacy Locked Coordinates</h4>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Phone numbers are locked until booking request acceptance to prevent spam.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-3xl overflow-hidden shadow-lg h-[250px] relative">
+              <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=600&auto=format&fit=crop" className="object-cover w-full h-full" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    // ----------------------------------------------------
+    // PAGE UI: AUTHENTICATION
+    // ----------------------------------------------------
+    function AuthPageUI({ onLogin, onRegister, colleges }) {
+      const [isLogin, setIsLogin] = useState(true);
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      
+      // signup state
+      const [name, setName] = useState('');
+      const [college, setCollege] = useState('');
+      const [phone, setPhone] = useState('');
+      const [instagramId, setInstagramId] = useState('');
+      const [vehicleType, setVehicleType] = useState('None');
+      const [vehicleModel, setVehicleModel] = useState('');
+      const [vehicleNumber, setVehicleNumber] = useState('');
+      
+      const [showOtp, setShowOtp] = useState(false);
+      const [otpInput, setOtpInput] = useState('');
+      const [error, setError] = useState('');
+      useLucideRefresh(showOtp + isLogin);
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        setError('');
+        if (isLogin) {
+          try {
+            onLogin(email, password);
+          } catch (err) {
+            setError(err.message);
+          }
+        } else {
+          // Verification check email
+          const isStudent = email.includes('@') && email.includes('.');
+          if (!isStudent) {
+            setError('Please enter a valid email address.');
+            return;
+          }
+          setShowOtp(true);
+        }
+      };
+      const handleOtpVerify = () => {
+        if (otpInput !== '1234') {
+          setError('Invalid OTP code. Enter 1234 to proceed.');
+          return;
+        }
+        setShowOtp(false);
+        try {
+          onRegister({
+            name, college, email, phone, password, instagramId: instagramId ? `@${instagramId}` : '', vehicleType, vehicleModel, vehicleNumber
+          });
+        } catch (err) {
+          setError(err.message);
+        }
+      };
+      return (
+        <div className="mx-auto max-w-md px-4 py-16 flex items-center justify-center flex-grow">
+          <div className="glass-card rounded-3xl p-8 border border-slate-200/50 dark:border-slate-800/40 w-full relative">
+            <div className="text-center mb-6">
+              <span className="text-3xl">🚗</span>
+              <h2 className="text-xl font-extrabold text-slate-900 dark:text-white mt-2">
+                {isLogin ? 'Sign In to CampusRide' : 'Register Student Account'}
+              </h2>
+            </div>
+            {error && (
+              <div className="mb-4 p-3 rounded-xl bg-red-50 text-red-600 border border-red-100 text-xs font-semibold dark:bg-red-950/20 dark:border-red-900/30">
+                {error}
+              </div>
+            )}
+            {!showOtp ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {!isLogin && (
+                  <>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Full Name</label>
+                      <input 
+                        type="text" required value={name} onChange={e => setName(e.target.value)} placeholder="Amit Kumar" 
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900 outline-none dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">College Campus</label>
+                      <select 
+                        required value={college} onChange={e => setCollege(e.target.value)} 
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900 outline-none dark:text-white"
+                      >
+                        <option value="">Select College</option>
+                        {colleges.map((c, i) => <option key={i} value={c.name}>{c.name}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Phone Number</label>
+                      <input 
+                        type="tel" required value={phone} onChange={e => setPhone(e.target.value)} placeholder="+91 99999 88888" 
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900 outline-none dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Instagram Username (Optional)</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">@</span>
+                        <input 
+                          type="text" value={instagramId} onChange={e => setInstagramId(e.target.value.replace(/^@/, ''))} placeholder="username" 
+                          className="w-full pl-6 pr-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900 outline-none dark:text-white"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Email Address</label>
+                  <input 
+                    type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="student@domain.com" 
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900 outline-none dark:text-white"
+                  />
+                  {isLogin && (
+                    <span 
+                      onClick={() => setEmail('aarav.sharma@iitb.ac.in')} 
+                      className="text-[9px] text-brand-500 font-semibold cursor-pointer block mt-1 hover:underline"
+                    >
+                      💡 Demo login: aarav.sharma@iitb.ac.in
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Password</label>
+                  <input 
+                    type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" 
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900 outline-none dark:text-white"
+                  />
+                </div>
+                {!isLogin && (
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">Commuting Vehicle (Optional)</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {['None', 'Bike', 'Car'].map(t => (
+                        <button
+                          key={t} type="button" onClick={() => setVehicleType(t)}
+                          className={`py-1 text-xs font-bold rounded-lg border transition-all ${vehicleType === t ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-slate-200 dark:border-slate-800 dark:text-slate-400'}`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {vehicleType !== 'None' && (
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <input 
+                          type="text" placeholder="Model: Activa, Honda City" required value={vehicleModel} onChange={e => setVehicleModel(e.target.value)}
+                          className="w-full px-2 py-1.5 text-[11px] rounded-lg border border-slate-200 bg-white/50 dark:border-slate-800 outline-none dark:text-white"
+                        />
+                        <input 
+                          type="text" placeholder="Number: MH-02-AB-1234" required value={vehicleNumber} onChange={e => setVehicleNumber(e.target.value)}
+                          className="w-full px-2 py-1.5 text-[11px] rounded-lg border border-slate-200 bg-white/50 dark:border-slate-800 outline-none dark:text-white"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+                <button 
+                  type="submit" 
+                  className="w-full py-2.5 rounded-xl bg-brand-500 text-white font-bold text-xs shadow-md hover:bg-brand-600 transition-all uppercase tracking-wider mt-4"
+                >
+                  {isLogin ? 'Sign In' : 'Register Account'}
+                </button>
+              </form>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <p className="text-xs text-slate-500">We simulated sending a 4-digit code to <strong>{email}</strong>.</p>
+                  <p className="text-[10px] text-brand-500 font-bold mt-1">Hint: Enter code 1234</p>
+                </div>
+                <input 
+                  type="text" maxLength="4" placeholder="Enter OTP (1234)" value={otpInput} onChange={e => setOtpInput(e.target.value)}
+                  className="w-full text-center py-2.5 rounded-xl border border-slate-200 bg-slate-50 font-bold text-sm tracking-widest outline-none focus:border-brand-500"
+                />
+                <div className="flex gap-2">
+                  <button onClick={() => setShowOtp(false)} className="flex-1 py-2 text-xs font-bold border border-slate-200 rounded-xl hover:bg-slate-50">Back</button>
+                  <button onClick={handleOtpVerify} className="flex-1 py-2 text-xs font-bold bg-brand-600 text-white rounded-xl shadow-md hover:bg-brand-500">Verify</button>
+                </div>
+              </div>
+            )}
+            <div className="text-center mt-6 pt-4 border-t border-slate-100 dark:border-slate-850">
+              <button 
+                onClick={() => { setIsLogin(!isLogin); setError(''); setShowOtp(false); }}
+                className="text-xs font-bold text-brand-600 dark:text-brand-400 hover:underline"
+              >
+                {isLogin ? "Don't have an account? Sign up" : 'Already registered? Login'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    // ----------------------------------------------------
+    // PAGE UI: DASHBOARD
+    // ----------------------------------------------------
+    function DashboardUI({ 
+      currentUser, ridePosts, setRidePosts, schedules, setSchedules, 
+      bookings, setBookings, users, setUsers, addNotification, onNavigate, setChatPartner 
+    }) {
+      const [paymentModal, setPaymentModal] = useState(null);
+      const [upiInput, setUpiInput] = useState('');
+      const [txnInput, setTxnInput] = useState('');
+      useLucideRefresh(paymentModal + ridePosts.length);
+      // Get my bookings (joined rides) and requests (rides I host)
+      const myBookingsList = bookings.filter(b => b.riderId === currentUser._id).map(b => {
+        const ride = ridePosts.find(p => p._id === b.rideId);
+        const driver = users.find(u => u._id === ride.driverId);
+        return { ...b, ride, driver };
+      });
+      const incomingRequests = bookings.filter(b => {
+        const ride = ridePosts.find(p => p._id === b.rideId);
+        return ride.driverId === currentUser._id;
+      }).map(b => {
+        const ride = ridePosts.find(p => p._id === b.rideId);
+        const rider = users.find(u => u._id === b.riderId);
+        return { ...b, ride, rider };
+      });
+      const myHostedRides = ridePosts.filter(p => p.driverId === currentUser._id);
+      const handleApproveBooking = (bookingId, status) => {
+        let targetBooking = null;
+        let targetRide = null;
+        let targetUser = null;
+        setBookings(prev => prev.map(b => {
+          if (b._id === bookingId) {
+            targetBooking = { ...b, status };
+            // Apply seats subtraction
+            if (status === 'Accepted') {
+              const ride = ridePosts.find(p => p._id === b.rideId);
+              if (ride) {
+                targetRide = { ...ride, seatsAvailable: ride.seatsAvailable - b.seatsBooked };
+                setRidePosts(posts => posts.map(p => p._id === ride._id ? targetRide : p));
+                // Credit carbon fuel savings
+                const fuelCredits = (b.seatsBooked * ride.price) / 100;
+                targetUser = { ...currentUser, savedFuelEstimate: Number((currentUser.savedFuelEstimate + fuelCredits).toFixed(1)) };
+                setUsers(allUsers => allUsers.map(u => u._id === currentUser._id ? targetUser : u));
+              }
+              confetti({ particleCount: 60, spread: 40 });
+              addNotification({ title: 'Request Accepted', message: 'You approved a join carpool request!' });
+            }
+            return targetBooking;
+          }
+          return b;
+        }));
+        setTimeout(() => {
+          if (targetBooking) upsertSupabaseCloud('bookings', bookingId, targetBooking);
+          if (targetRide) upsertSupabaseCloud('rideposts', targetRide._id, targetRide);
+          if (targetUser) upsertSupabaseCloud('users', currentUser._id, targetUser);
+        }, 50);
+      };
+      const handlePaySubmit = (e) => {
+        e.preventDefault();
+        let targetBooking = null;
+        setBookings(prev => prev.map(b => {
+          if (b._id === paymentModal._id) {
+            targetBooking = { ...b, paymentStatus: 'Paid', paymentDetails: { upiId: upiInput, transactionId: txnInput } };
+            return targetBooking;
+          }
+          return b;
+        }));
+        addNotification({ title: 'Payment Submitted', message: 'UPI transaction logged successfully!' });
+        setPaymentModal(null);
+        setUpiInput('');
+        setTxnInput('');
+        if (targetBooking) {
+          upsertSupabaseCloud('bookings', targetBooking._id, targetBooking);
+        }
+      };
+      const handleCancelRide = (rideId) => {
+        let targetRide = null;
+        setRidePosts(prev => prev.map(p => {
+          if (p._id === rideId) {
+            targetRide = { ...p, status: 'Cancelled' };
+            return targetRide;
+          }
+          return p;
+        }));
+        addNotification({ title: 'Ride Cancelled', message: 'Your hosted ride post has been cancelled.' });
+        if (targetRide) {
+          upsertSupabaseCloud('rideposts', rideId, targetRide);
+        }
+      };
+      const runDailySchedulerMock = () => {
+        alert('Daily scheduler process refreshed!\n- Recurring everyday schedules created posts.\n- Excluded dates skipped.\n- Old rides completed.');
+      };
+      return (
+        <div className="mx-auto max-w-7xl px-4 py-8">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <span>Hey, {currentUser.name.split(' ')[0]}</span>
+                <span className="animate-bounce">👋</span>
+              </h1>
+              <p className="text-[10px] text-slate-400 mt-0.5">{currentUser.college} Commuter Zone</p>
+            </div>
+            
+            <div className="flex gap-2">
+              <button 
+                onClick={runDailySchedulerMock} 
+                className="py-2 px-3 text-[10px] border border-dashed border-brand-300 hover:border-brand-500 font-bold text-brand-500 rounded-xl bg-brand-50/10"
+              >
+                ⚙️ Refresh Daily Auto-Posting
+              </button>
+              <button onClick={() => onNavigate('find-ride')} className="py-2 px-3 text-[10px] font-bold border border-slate-200 rounded-xl hover:bg-slate-50 dark:border-slate-800 dark:text-slate-350 dark:hover:bg-slate-900">Find Ride</button>
+              <button onClick={() => onNavigate('post-ride')} className="py-2 px-3 text-[10px] font-bold bg-brand-500 text-white rounded-xl hover:bg-brand-600 shadow-md">Post Ride</button>
+            </div>
+          </div>
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="glass-card rounded-2xl p-5 border border-slate-200/50">
+              <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Rides Posted</span>
+              <span className="text-xl font-extrabold block mt-2 text-slate-850 dark:text-slate-100">{myHostedRides.length}</span>
+            </div>
+            <div className="glass-card rounded-2xl p-5 border border-slate-200/50">
+              <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Schedules</span>
+              <span className="text-xl font-extrabold block mt-2 text-slate-850 dark:text-slate-100">{schedules.length}</span>
+            </div>
+            <div className="glass-card rounded-2xl p-5 border border-slate-200/50">
+              <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Saved Fuel</span>
+              <span className="text-xl font-extrabold block mt-2 text-emerald-500">{currentUser.savedFuelEstimate} Liters</span>
+            </div>
+            <div className="glass-card rounded-2xl p-5 border border-slate-200/50">
+              <span className="text-[9px] uppercase tracking-wider text-slate-400 font-bold">Money Saved</span>
+              <span className="text-xl font-extrabold block mt-2 text-brand-500">₹{currentUser.savedFuelEstimate * 100}</span>
+            </div>
+          </div>
+          {/* Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            {/* My Booked Rides */}
+            <div className="lg:col-span-2 space-y-6">
+              <div>
+                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">My Booked Rides</h3>
+                {myBookingsList.length === 0 ? (
+                  <div className="border border-dashed border-slate-200 rounded-2xl p-8 text-center text-slate-400 text-xs dark:border-slate-800">
+                    No rides booked yet. Search commutes heading to college!
+                  </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-2">
-                    <Icon name="camera" size={24} className="text-slate-500"/>
-                    <span className="text-xs text-slate-500">Tap to upload vehicle photo</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {myBookingsList.map(b => (
+                      <div key={b._id} className="glass-card rounded-2xl p-5 border border-slate-200/50 flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-baseline mb-2">
+                            <span className={`px-2 py-0.5 text-[8px] font-bold rounded uppercase tracking-wider ${
+                              b.status === 'Accepted' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-yellow-50 text-yellow-600'
+                            }`}>
+                              {b.status}
+                            </span>
+                            <span className="text-xs font-bold text-slate-500">₹{b.ride.price}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mb-3 border-b pb-2">
+                            <img src={b.driver.profilePhoto} className="h-7 w-7 rounded-full bg-slate-100" />
+                            <div>
+                              <h4 className="text-xs font-bold">{b.driver.name}</h4>
+                              <p className="text-[9px] text-slate-400">{b.driver.vehicleDetails.type} • {b.driver.vehicleDetails.model}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-1 text-xs text-slate-500 mb-4">
+                            <p><strong>Pickup:</strong> {b.ride.pickup}</p>
+                            <p><strong>College:</strong> {b.ride.destination}</p>
+                            <p><strong>Departure Time:</strong> {b.ride.rideDate} at {b.ride.departureTime}</p>
+                            {b.status === 'Accepted' && (
+                              <div className="flex flex-wrap gap-1.5 mt-2 text-[10px] font-bold">
+                                <a 
+                                  href={`tel:${b.driver.phone}`} 
+                                  className="flex items-center gap-1 text-slate-600 hover:text-brand-500 bg-slate-100/50 dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800"
+                                >
+                                  <span>📞</span>
+                                  <span>{b.driver.phone}</span>
+                                </a>
+                                {b.driver.instagramId && (
+                                  <a 
+                                    href={`https://instagram.com/${b.driver.instagramId.replace(/^@/, '')}`} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-slate-600 hover:text-pink-500 bg-slate-100/50 dark:bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-200/40 dark:border-slate-800"
+                                  >
+                                    <span className="text-pink-500 font-bold text-[9px] leading-none">📸</span>
+                                    <span>{b.driver.instagramId}</span>
+                                  </a>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex gap-1.5 border-t pt-3">
+                          {b.status === 'Accepted' && b.paymentStatus === 'Pending' && (
+                            <button 
+                              onClick={() => setPaymentModal(b)}
+                              className="flex-grow py-1.5 bg-brand-500 hover:bg-brand-600 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1 shadow-md shadow-brand-500/10"
+                            >
+                              <i data-lucide="qr-code" className="h-3.5 w-3.5"></i>
+                              <span>Pay UPI ₹{b.ride.price}</span>
+                            </button>
+                          )}
+                          {b.status === 'Accepted' && b.paymentStatus === 'Paid' && (
+                            <span className="flex-grow py-1.5 bg-emerald-500/10 text-emerald-600 border border-emerald-200 rounded-lg text-[10px] font-extrabold uppercase tracking-wider text-center">
+                              ✓ Paid Confirmed
+                            </span>
+                          )}
+                          {b.status === 'Accepted' && (
+                            <a 
+                              href={`tel:${b.driver.phone}`}
+                              className="p-2 border border-slate-200 rounded-xl hover:bg-slate-50 dark:border-slate-800 dark:text-slate-350 dark:hover:bg-slate-900 flex items-center justify-center"
+                              title="Call driver"
+                            >
+                              <i data-lucide="phone" className="h-3.5 w-3.5 text-brand-500"></i>
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange}/>
+              {/* My Hosted Ride posts */}
+              <div>
+                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">My Hosted Rides</h3>
+                {myHostedRides.length === 0 ? (
+                  <div className="border border-dashed border-slate-200 rounded-2xl p-8 text-center text-slate-400 text-xs dark:border-slate-800">
+                    No rides hosted. Share your vehicle commute!
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {myHostedRides.map(ride => (
+                      <div key={ride._id} className="glass-card rounded-2xl p-5 border border-slate-200/50">
+                        <div className="flex justify-between items-baseline mb-2">
+                          <span className={`px-2 py-0.5 text-[8px] font-bold rounded uppercase tracking-wider ${
+                            ride.status === 'Active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-slate-100 text-slate-500'
+                          }`}>
+                            {ride.status}
+                          </span>
+                          <span className="text-[10px] text-slate-400">{ride.rideDate}</span>
+                        </div>
+                        <div className="space-y-1 text-xs text-slate-500 mb-3">
+                          <p><strong>From:</strong> {ride.pickup}</p>
+                          <p><strong>To:</strong> {ride.destination}</p>
+                          <p><strong>Time:</strong> {ride.departureTime}</p>
+                        </div>
+                        <div className="flex justify-between items-center text-xs font-bold bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border mb-3">
+                          <span className="text-slate-400">Seats remaining:</span>
+                          <span className="text-brand-500">{ride.seatsAvailable} / {ride.originalSeats} left</span>
+                        </div>
+                        {ride.status === 'Active' && (
+                          <div className="flex justify-end">
+                            <button 
+                              onClick={() => handleCancelRide(ride._id)}
+                              className="px-3 py-1 border border-red-200 hover:bg-red-50 text-red-500 text-xs font-bold rounded-lg"
+                            >
+                              Cancel Ride
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            {/* Incoming Requests sidebar */}
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest mb-3">Carpool Requests</h3>
+                {incomingRequests.length === 0 ? (
+                  <div className="border border-dashed border-slate-200 rounded-2xl p-8 text-center text-slate-400 text-xs dark:border-slate-800 bg-white/20">
+                    No active classmate join requests.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {incomingRequests.map(req => (
+                      <div key={req._id} className="glass-card rounded-2xl p-4 border border-slate-200/50 relative">
+                        <div className="flex justify-between items-start gap-2 mb-2">
+                          <div className="flex items-center gap-2">
+                            <img src={req.rider.profilePhoto} className="h-7 w-7 rounded-full bg-slate-100" />
+                            <div>
+                              <h4 className="text-xs font-bold">{req.rider.name}</h4>
+                              <p className="text-[9px] text-slate-400">Rating: {req.rider.averageRating || 5.0} ⭐</p>
+                            </div>
+                          </div>
+                          <span className="text-xs font-extrabold text-brand-500">
+                            {req.seatsBooked} {req.seatsBooked > 1 ? 'seats' : 'seat'}
+                          </span>
+                        </div>
+                        <div className="space-y-1 text-[11px] text-slate-500 border-t pt-2 mb-3">
+                          <p><strong>Pickup Point:</strong> {req.ride.pickup}</p>
+                          <p><strong>Departure Date:</strong> {req.ride.rideDate} at {req.ride.departureTime}</p>
+                          <p><strong>Payment status:</strong> <span className={`font-bold ${req.paymentStatus === 'Paid' ? 'text-emerald-500' : 'text-yellow-500'}`}>{req.paymentStatus}</span></p>
+                          {req.paymentDetails?.transactionId && (
+                            <p className="bg-slate-50 dark:bg-slate-850 p-1 rounded font-mono text-[9px] truncate">Txn ID: {req.paymentDetails.transactionId}</p>
+                          )}
+                        </div>
+                        {req.status === 'Pending' ? (
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => handleApproveBooking(req._id, 'Rejected')}
+                              className="flex-1 py-1.5 border border-red-200 hover:bg-red-50 text-red-500 text-xs font-bold rounded-lg flex items-center justify-center gap-1"
+                            >
+                              <i data-lucide="x" className="h-3.5 w-3.5"></i> Reject
+                            </button>
+                            <button 
+                              onClick={() => handleApproveBooking(req._id, 'Accepted')}
+                              className="flex-1 py-1.5 bg-brand-500 hover:bg-brand-600 text-white text-xs font-bold rounded-lg flex items-center justify-center gap-1"
+                            >
+                              <i data-lucide="check" className="h-3.5 w-3.5"></i> Accept
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="text-center py-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 border text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                            Request {req.status}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* Safety banner */}
+              <div className="p-4 rounded-2xl border border-emerald-100 bg-emerald-50/20 dark:border-emerald-950/30">
+                <h4 className="text-xs font-extrabold text-slate-800 dark:text-slate-100 uppercase tracking-widest flex items-center gap-1 mb-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block animate-ping"></span>
+                  <span>Safety Advisory</span>
+                </h4>
+                <p className="text-[10px] text-slate-500 leading-relaxed">
+                  Only join rides with verified college students. Match passenger/driver names and college IDs upon meeting.
+                </p>
+              </div>
+            </div>
+          </div>
+          {/* UPI Payment Modal */}
+          {paymentModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border max-w-sm w-full text-center shadow-2xl relative">
+                <button onClick={() => setPaymentModal(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-650">
+                  <i data-lucide="x" className="h-5 w-5"></i>
+                </button>
+                <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100 mb-3">UPI Fuel Payment</h3>
+                <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl mb-4 text-center border">
+                  <span className="text-xs text-slate-400 block uppercase">SCAN & SEND</span>
+                  <span className="text-2xl font-extrabold text-slate-850 dark:text-white my-1 block">₹{paymentModal.ride.price}</span>
+                  <div className="bg-white p-3 border rounded-xl max-w-[120px] mx-auto my-3 flex items-center justify-center">
+                    <div className="w-20 h-20 bg-[repeating-conic-gradient(#000_0_25%,#fff_0_50%)] bg-[size:8px_8px] opacity-90"></div>
+                  </div>
+                  <p className="text-[10px] font-mono text-slate-500">UPI ID: {paymentModal.driver.name.toLowerCase().replace(/ /g, '')}@okaxis</p>
+                </div>
+                <form onSubmit={handlePaySubmit} className="space-y-3 text-left">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Your UPI ID</label>
+                    <input 
+                      type="text" required value={upiInput} onChange={e => setUpiInput(e.target.value)} placeholder="yourname@okaxis" 
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-850 bg-white/50 outline-none dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-400 mb-1">Transaction ID</label>
+                    <input 
+                      type="text" required value={txnInput} onChange={e => setTxnInput(e.target.value)} placeholder="TXN1293817" 
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-850 bg-white/50 outline-none dark:text-white"
+                    />
+                  </div>
+                  <button 
+                    type="submit" 
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-bold text-xs uppercase tracking-wider shadow-md mt-4"
+                  >
+                    Submit Transaction details
+                  </button>
+                </form>
+              </div>
             </div>
           )}
         </div>
-
-        {/* Contact */}
-        <div className="glass rounded-2xl p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Icon name="phone" size={15} className="text-blue-400"/> Contact Info <span className="text-xs text-slate-500 font-normal">(at least one required)</span></h3>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Phone Number</label>
-            <input className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder="+91 98765 43210" value={form.phone} onChange={e => upd('phone', e.target.value)}/>
+      );
+    }
+   // ----------------------------------------------------
+    // PAGE UI: POST RIDE PAGE
+    // ----------------------------------------------------
+    function PostRideUI({ currentUser, schedules, setSchedules, ridePosts, setRidePosts, addNotification, onNavigate, colleges }) {
+      const [pickup, setPickup] = useState('Powai Vihar, Mumbai');
+      const [destination, setDestination] = useState(currentUser?.college || 'IIT Bombay');
+      const [landmark, setLandmark] = useState('Near D-Mart');
+      const [routeDescription, setRouteDescription] = useState('JVLR Road');
+      const [time, setTime] = useState('08:30');
+      const [seats, setSeats] = useState(4);
+      const [price, setPrice] = useState(60);
+      const [genderPreference, setGenderPreference] = useState('Any');
+      const [driverPhone, setDriverPhone] = useState(currentUser?.phone || '');
+      const [driverInstagram, setDriverInstagram] = useState(currentUser?.instagramId || '');
+      const [repeatType, setRepeatType] = useState('Today'); // Today, Tomorrow, EveryDay, Weekly, Calendar
+      const [selectedDays, setSelectedDays] = useState([]);
+      const [calendarDates, setCalendarDates] = useState([]);
+      useLucideRefresh(repeatType + selectedDays.length + calendarDates.length);
+      const handleDaySelect = (idx) => {
+        if (selectedDays.includes(idx)) {
+          setSelectedDays(prev => prev.filter(d => d !== idx));
+        } else {
+          setSelectedDays(prev => [...prev, idx]);
+        }
+      };
+      const handleCalendarDateToggle = (dateStr) => {
+        if (calendarDates.includes(dateStr)) {
+          setCalendarDates(prev => prev.filter(d => d !== dateStr));
+        } else {
+          setCalendarDates(prev => [...prev, dateStr]);
+        }
+      };
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        
+        // 1. Create Schedule Template
+        const newSchedId = 's' + (schedules.length + 1);
+        const newSched = {
+          _id: newSchedId,
+          userId: currentUser._id,
+          pickup,
+          destination,
+          landmark,
+          routeDescription,
+          time,
+          repeatType,
+          selectedDays,
+          selectedDates: calendarDates,
+          excludedDates: [],
+          seats: Number(seats),
+          price: Number(price),
+          genderPreference,
+          phone: driverPhone,
+          instagramId: driverInstagram ? (driverInstagram.startsWith('@') ? driverInstagram : `@${driverInstagram}`) : '',
+          isActive: true
+        };
+        setSchedules(prev => [...prev, newSched]);
+        upsertSupabaseCloud('rideschedules', newSchedId, newSched);
+        // 2. Generate active posts based on scheduler
+        const newPost = {
+          _id: 'p' + (ridePosts.length + 1),
+          scheduleId: newSchedId,
+          driverId: currentUser._id,
+          rideDate: repeatType === 'Tomorrow' ? tomorrowStr : todayStr,
+          departureTime: time,
+          pickup,
+          destination,
+          landmark,
+          seatsAvailable: Number(seats),
+          originalSeats: Number(seats),
+          price: Number(price),
+          phone: driverPhone,
+          instagramId: driverInstagram ? (driverInstagram.startsWith('@') ? driverInstagram : `@${driverInstagram}`) : '',
+          status: 'Active',
+          joinedRiders: []
+        };
+        setRidePosts(prev => [newPost, ...prev]);
+        upsertSupabaseCloud('rideposts', newPost._id, newPost);
+        addNotification({ title: 'Ride Posted Successfully', message: `Your commute starting from ${pickup} is live!` });
+        onNavigate('dashboard');
+      };
+      return (
+        <div className="mx-auto max-w-5xl px-4 py-8">
+          <div className="mb-6">
+            <h1 className="text-xl font-extrabold text-slate-900 dark:text-white">Post a Commute Ride</h1>
+            <p className="text-xs text-slate-500 mt-1">Specify route details and schedule rules for auto posting.</p>
           </div>
-          <div>
-            <label className="text-xs text-slate-400 mb-1 block">Instagram Handle</label>
-            <input className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder="@your_handle" value={form.instagram} onChange={e => upd('instagram', e.target.value)}/>
-          </div>
-        </div>
-
-        <button type="submit" disabled={submitting}
-          className="btn-primary w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2 disabled:opacity-50">
-          {submitting ? <><Icon name="loader-2" size={18} className="animate-spin"/>Posting...</> : <><Icon name="plus-circle" size={18}/> Post Ride</>}
-        </button>
-      </form>
-    </div>
-  );
-}
-
-// ─── Dashboard Tab ────────────────────────────────────────────
-function DashboardTab({ currentUser, toast }) {
-  const [myRides, setMyRides] = useState([]);
-  const [myBookings, setMyBookings] = useState([]);
-  const [activeSection, setActiveSection] = useState('rides');
-
-  useEffect(() => {
-    if (!currentUser) return;
-    const rides = getRides().filter(r => r.userId === currentUser.id);
-    setMyRides(rides);
-    const bookings = getBookings().filter(b => b.userId === currentUser.id);
-    const bookedRides = bookings.map(b => getRides().find(r => r.id === b.rideId)).filter(Boolean);
-    setMyBookings(bookedRides);
-  }, [currentUser]);
-
-  function deleteRide(rideId) {
-    const updated = getRides().filter(r => r.id !== rideId);
-    saveRides(updated);
-    setMyRides(prev => prev.filter(r => r.id !== rideId));
-    toast('Ride deleted', 'success');
-  }
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-xl font-bold text-slate-100 mb-1">Dashboard</h2>
-        <p className="text-sm text-slate-400">Manage your rides and bookings</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'My Rides', value: myRides.length, icon: 'car', color: 'blue' },
-          { label: 'Bookings', value: myBookings.length, icon: 'ticket', color: 'emerald' },
-          { label: 'Savings', value: `₹${myBookings.reduce((a,r) => a+(r?.price||0), 0)}`, icon: 'coins', color: 'yellow' },
-        ].map(s => (
-          <div key={s.label} className="glass rounded-xl p-3 text-center">
-            <p className={`text-xl font-bold text-${s.color}-400`}>{s.value}</p>
-            <p className="text-[10px] text-slate-500 mt-0.5">{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <div className="flex rounded-xl overflow-hidden glass-light p-1">
-        {[['rides','My Rides'],['bookings','My Bookings']].map(([id, label]) => (
-          <button key={id} onClick={() => setActiveSection(id)}
-            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${activeSection===id ? 'bg-brand text-white' : 'text-slate-400 hover:text-white'}`}>
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {activeSection === 'rides' && (
-        <div className="space-y-3 fade-in">
-          {myRides.length === 0 ? (
-            <div className="glass rounded-2xl p-8 text-center">
-              <Icon name="car" size={40} className="text-slate-600 mx-auto mb-3"/>
-              <p className="text-slate-400 font-medium">No rides posted yet</p>
-              <p className="text-slate-500 text-sm mt-1">Head to Post Ride to share a ride</p>
-            </div>
-          ) : myRides.map(r => (
-            <div key={r.id} className="glass rounded-2xl p-4 fade-in">
-              <div className="flex items-start justify-between gap-3 mb-3">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Left Inputs */}
+            <div className="glass-card rounded-2xl p-6 border space-y-4">
+              <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest border-b pb-2 mb-2">Route details</h3>
+              
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="tag bg-blue-500/20 text-blue-400 text-xs">{r.schedule}</span>
-                    <span className="tag bg-slate-700 text-slate-300 text-xs">{r.time}</span>
-                  </div>
-                  <p className="font-semibold text-sm text-slate-200">{r.pickup} → {r.destination}</p>
-                  <p className="text-xs text-slate-500 mt-0.5">{r.vehicleModel} · ₹{r.price}/seat · {r.seats} seats</p>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Pickup Location</label>
+                  <input 
+                    type="text" required value={pickup} onChange={e => setPickup(e.target.value)} 
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none"
+                  />
                 </div>
-                <button onClick={() => deleteRide(r.id)} className="text-red-400/60 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10">
-                  <Icon name="trash-2" size={16}/>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Destination Campus</label>
+                  <select 
+                    required value={destination} onChange={e => setDestination(e.target.value)} 
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none cursor-pointer"
+                  >
+                    <option value="">Select College</option>
+                    {colleges.map((c, i) => <option key={i} value={c.name}>{c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <input 
+                  type="text" placeholder="Landmark: Exit Gate" value={landmark} onChange={e => setLandmark(e.target.value)} 
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none"
+                />
+                <input 
+                  type="text" placeholder="Route e.g. JVLR road" value={routeDescription} onChange={e => setRouteDescription(e.target.value)} 
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Seats Available</label>
+                  <input 
+                    type="number" min="1" max="6" required value={seats} onChange={e => setSeats(e.target.value)} 
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Fuel cost ₹</label>
+                  <input 
+                    type="number" min="20" required value={price} onChange={e => setPrice(e.target.value)} 
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Gender Pref</label>
+                  <select 
+                    value={genderPreference} onChange={e => setGenderPreference(e.target.value)} 
+                    className="w-full px-2 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none cursor-pointer"
+                  >
+                    <option value="Any">Any</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Departure Time</label>
+                <input 
+                  type="time" required value={time} onChange={e => setTime(e.target.value)} 
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3 border-t border-slate-100 dark:border-slate-800 pt-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Contact Phone Number</label>
+                  <input 
+                    type="tel" required value={driverPhone} onChange={e => setDriverPhone(e.target.value)} placeholder="+91 99999 88888"
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Contact Instagram Username (Optional)</label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">@</span>
+                    <input 
+                      type="text" value={driverInstagram} onChange={e => setDriverInstagram(e.target.value.replace(/^@/, ''))} placeholder="username" 
+                      className="w-full pl-6 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="pt-2">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Route preview</label>
+                <InteractiveMap pickup={pickup} destination={destination} height="180px" />
+              </div>
+            </div>
+            {/* Right Recurrence Selector */}
+            <div className="glass-card rounded-2xl p-6 border flex flex-col justify-between">
+              <div>
+                <h3 className="text-xs font-extrabold text-slate-400 uppercase tracking-widest border-b pb-2 mb-4">Posting Schedule Options</h3>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-5 lg:grid-cols-2 gap-2 mb-6">
+                  {['Today', 'Tomorrow', 'EveryDay', 'Weekly', 'Calendar'].map(t => (
+                    <button
+                      key={t} type="button" onClick={() => setRepeatType(t)}
+                      className={`py-1.5 px-3 text-xs font-bold rounded-xl border transition-all ${
+                        repeatType === t 
+                          ? 'border-brand-500 bg-brand-50 text-brand-600' 
+                          : 'border-slate-200 dark:border-slate-800 dark:text-slate-400'
+                      }`}
+                    >
+                      {t === 'EveryDay' ? 'Every Day' : t}
+                    </button>
+                  ))}
+                </div>
+                {repeatType === 'Today' && <p className="text-xs text-slate-400 leading-relaxed">Rides will post today only, then expire automatically.</p>}
+                {repeatType === 'Tomorrow' && <p className="text-xs text-slate-400 leading-relaxed">Rides will post tomorrow only, then expire automatically.</p>}
+                {repeatType === 'EveryDay' && <p className="text-xs text-slate-400 leading-relaxed">Schedules will auto-create posts every single day at midnight.</p>}
+                
+                {repeatType === 'Weekly' && (
+                  <div className="space-y-3">
+                    <label className="block text-xs font-bold text-slate-600 uppercase">Select Weekdays</label>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
+                        <button
+                          key={d} type="button" onClick={() => handleDaySelect(i)}
+                          className={`h-9 w-9 text-xs font-bold rounded-lg border transition-all flex items-center justify-center ${
+                            selectedDays.includes(i) ? 'border-emerald-500 bg-emerald-50 text-emerald-600' : 'border-slate-200 dark:border-slate-800'
+                          }`}
+                        >
+                          {d}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {repeatType === 'Calendar' && (
+                  <div className="space-y-3">
+                    <label className="block text-xs font-bold text-slate-600 uppercase">Interactive Calendar Dates</label>
+                    
+                    {/* Compact custom calendar month display */}
+                    <div className="border rounded-xl p-3 bg-slate-50 dark:bg-slate-950/20 text-center">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase mb-2 block">May 2026</span>
+                      <div className="grid grid-cols-7 gap-1 text-[9px] text-slate-400 font-bold mb-1">
+                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((h, i) => <span key={i}>{h}</span>)}
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {/* 5 empty spaces for May start */}
+                        {[...Array(5)].map((_, i) => <div key={i} className="h-6"></div>)}
+                        {[...Array(15)].map((_, i) => {
+                          const dateStr = `2026-05-${String(i + 1).padStart(2, '0')}`;
+                          const isSelected = calendarDates.includes(dateStr);
+                          return (
+                            <button
+                              key={i} type="button" onClick={() => handleCalendarDateToggle(dateStr)}
+                              className={`h-6 w-6 text-[10px] font-bold rounded-md flex items-center justify-center transition-all ${
+                                isSelected ? 'bg-brand-500 text-white' : 'hover:bg-slate-200 text-slate-700 dark:text-slate-400'
+                              }`}
+                            >
+                              {i + 1}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <button 
+                type="submit" 
+                className="w-full py-3 bg-gradient-to-tr from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md mt-6"
+              >
+                Create Ride Schedule
+              </button>
+            </div>
+          </form>
+        </div>
+      );
+    }
+    // ----------------------------------------------------
+    // PAGE UI: FIND RIDE PAGE
+    // ----------------------------------------------------
+    function FindRideUI({ currentUser, ridePosts, bookings, setBookings, users, addNotification, onNavigate, setChatPartner, colleges }) {
+// Search form state
+      const [searchCollege, setSearchCollege] = useState('');
+      const [searchDate, setSearchDate] = useState('Today');
+      const [searchVehicle, setSearchVehicle] = useState('Any');
+      const [searchGender, setSearchGender] = useState('Any');
+      // Results state — null = not searched yet, [] = searched but empty
+      const [results, setResults] = useState(null);
+      const [hasSearched, setHasSearched] = useState(false);
+      // booking state
+      const [joinModal, setJoinModal] = useState(null);
+      const [joinSeats, setJoinSeats] = useState(1);
+      useLucideRefresh(String(joinModal) + hasSearched);
+const handleSearch = () => {
+        const filtered = ridePosts.filter(p => {
+          // Exclude my own rides
+          if (p.driverId === currentUser?._id) return false;
+          // Only active rides
+          if (p.status !== 'Active') return false;
+const driver = users.find(u => u._id === p.driverId);
+          if (!driver) return false;
+ // College/destination match (partial, case-insensitive)
+          if (searchCollege && !p.destination.toLowerCase().includes(searchCollege.toLowerCase())) return false;
+// Date match
+          if (searchDate === 'Today' && p.rideDate !== todayStr) return false;
+          if (searchDate === 'Tomorrow' && p.rideDate !== tomorrowStr) return false;
+// Vehicle match
+          if (searchVehicle !== 'Any' && driver.vehicleDetails.type !== searchVehicle) return false;
+// Gender preference match
+          if (searchGender !== 'Any' && p.genderPreference && p.genderPreference !== 'Any' && p.genderPreference !== searchGender) return false;
+return true;
+        }).map(p => {
+          const driver = users.find(u => u._id === p.driverId);
+          return { ...p, driver };
+        });
+        setResults(filtered);
+        setHasSearched(true);
+      };
+      const handleClear = () => {
+        setSearchCollege('');
+        setSearchDate('Today');
+        setSearchVehicle('Any');
+        setSearchGender('Any');
+        setResults(null);
+        setHasSearched(false);
+      };
+      const handleRequestJoinSubmit = (e) => {
+        e.preventDefault();
+        const newBooking = {
+          _id: 'b' + (bookings.length + 1),
+          riderId: currentUser._id,
+          rideId: joinModal._id,
+          seatsBooked: Number(joinSeats),
+          paymentStatus: 'Pending',
+          paymentDetails: { upiId: '', transactionId: '' },
+          status: 'Pending'
+        };
+        setBookings(prev => [...prev, newBooking]);
+        upsertSupabaseCloud('bookings', newBooking._id, newBooking);
+        addNotification({ title: 'Request Sent', message: `Join request sent to ${joinModal.driver.name}!` });
+ // Update local results list too so UI reflects the booking
+        setResults(prev => prev ? prev.map(r => r._id === joinModal._id ? { ...r, seatsAvailable: r.seatsAvailable - Number(joinSeats) } : r) : prev);
+        alert('Carpool join request sent! Track it on your Dashboard.');
+        setJoinModal(null);
+        setJoinSeats(1);
+      };
+      const getBadge = (seats) => {
+if (seats <= 0) return { text: 'Ride Full', cls: 'bg-red-50 text-red-600 border border-red-100' };
+        if (seats === 1) return { text: '1 seat left', cls: 'bg-yellow-50 text-yellow-600 border border-yellow-100' };
+        return { text: `${seats} seats`, cls: 'bg-emerald-50 text-emerald-600 border border-emerald-100' };
+      };
+      return (
+ <div className="mx-auto max-w-5xl px-4 py-8">
+          {/* Page Header */}
+          <div className="mb-6">
+<h1 className="text-2xl font-extrabold text-slate-900 dark:text-white">Find a Ride</h1>
+            <p className="text-sm text-slate-500 mt-1">Select your filters below and click <strong>Find Rides</strong> to search available carpools.</p>
+          </div>
+ {/* Search Card */}
+          <div className="glass-card rounded-3xl border border-slate-200/60 dark:border-slate-800/50 p-6 mb-8 shadow-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+ {/* College */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">🎓 College Destination</label>
+                <select
+                  value={searchCollege}
+                  onChange={e => setSearchCollege(e.target.value)}
+                  className="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none focus:border-brand-400 transition-colors cursor-pointer"
+                >
+                  <option value="">All Colleges</option>
+                  {colleges && colleges.map((c, i) => (
+                    <option key={i} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+ {/* Date */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">📅 Date</label>
+                <div className="flex gap-1.5">
+                  {['Today', 'Tomorrow', 'Any'].map(d => (
+                    <button
+                      key={d} type="button"
+                      onClick={() => setSearchDate(d)}
+                      className={`flex-1 py-2.5 text-[10px] font-bold rounded-xl border transition-all ${searchDate === d ? 'border-brand-500 bg-brand-500 text-white shadow-sm' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-brand-300'}`}
+                    >
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+{/* Vehicle */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">🚗 Vehicle Type</label>
+                <select
+                  value={searchVehicle}
+                  onChange={e => setSearchVehicle(e.target.value)}
+                  className="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none focus:border-brand-400 transition-colors cursor-pointer"
+                >
+                  <option value="Any">Any Vehicle</option>
+                  <option value="Car">Car</option>
+                  <option value="Bike">Bike</option>
+                </select>
+              </div>
+              {/* Gender */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">👤 Gender Preference</label>
+                <select
+                  value={searchGender}
+                  onChange={e => setSearchGender(e.target.value)}
+                  className="w-full px-3 py-2.5 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 dark:text-white outline-none focus:border-brand-400 transition-colors cursor-pointer"
+                >
+                  <option value="Any">Any</option>
+                  <option value="Male">Male only</option>
+                  <option value="Female">Female only</option>
+                </select>
+              </div>
+            </div>
+{/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={handleSearch}
+                className="flex-grow py-3 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 text-white font-bold text-sm rounded-2xl shadow-md shadow-brand-500/20 transition-all flex items-center justify-center gap-2"
+              >
+                <i data-lucide="search" className="h-4 w-4"></i>
+                Find Rides
+              </button>
+              {hasSearched && (
+                <button
+                  onClick={handleClear}
+                  className="px-5 py-3 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold text-sm rounded-2xl hover:bg-slate-50 dark:hover:bg-slate-900 transition-all"
+                >
+                  Clear
                 </button>
+              )}
+            </div>
+          </div>
+          {/* Results Section */}
+          {!hasSearched ? (
+            /* Initial state — prompt to search */
+            <div className="text-center py-16 px-4">
+              <div className="text-5xl mb-4">🚗</div>
+              <h3 className="text-base font-bold text-slate-700 dark:text-slate-200 mb-2">Ready to find your ride?</h3>
+              <p className="text-sm text-slate-400">Select your college, date, and preferences above, then click <strong>Find Rides</strong>.</p>
+            </div>
+          ) : results.length === 0 ? (
+            /* No results */
+            <div className="text-center py-16 px-4 border border-dashed border-slate-300 dark:border-slate-700 rounded-3xl">
+              <div className="text-5xl mb-4">😔</div>
+              <h3 className="text-base font-bold text-slate-700 dark:text-slate-200 mb-2">No rides found</h3>
+              <p className="text-sm text-slate-400 mb-4">No carpools match your filters. Try changing the date or college.</p>
+              <button onClick={handleClear} className="px-6 py-2.5 bg-brand-500 text-white text-xs font-bold rounded-xl hover:bg-brand-600 transition-all">
+                Reset Filters
+              </button>
+            </div>
+          ) : (
+            /* Results Grid */
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                  Found <span className="text-brand-500">{results.length}</span> ride{results.length !== 1 ? 's' : ''}
+                  {searchCollege ? ` going to ${searchCollege}` : ''}
+                  {searchDate !== 'Any' ? ` — ${searchDate}` : ''}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {results.map(ride => {
+                  const badge = getBadge(ride.seatsAvailable);
+                  const alreadyBooked = bookings.some(b => b.riderId === currentUser._id && b.rideId === ride._id);
+                  return (
+                    <div key={ride._id} className="glass-card rounded-2xl p-5 border border-slate-200/50 dark:border-slate-800/50 flex flex-col justify-between hover:shadow-lg transition-all">
+                      {/* Driver info */}
+                      <div>
+                        <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800 mb-3">
+                          <div className="flex items-center gap-2.5">
+                            <img src={ride.driver.profilePhoto} className="h-9 w-9 rounded-full bg-slate-100 object-cover border-2 border-white shadow-sm" />
+                            <div>
+                              <h4 className="text-sm font-bold text-slate-800 dark:text-white">{ride.driver.name}</h4>
+                              <p className="text-[10px] text-slate-400">{ride.driver.college}</p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-lg font-extrabold text-brand-500">₹{ride.price}</span>
+                            <p className="text-[10px] text-slate-400">per seat</p>
+                          </div>
+                        </div>
+                        {/* Route details */}
+                        <div className="space-y-1.5 text-xs text-slate-600 dark:text-slate-300 mb-3">
+                          <div className="flex items-start gap-2">
+                            <span className="text-red-400 mt-0.5">📍</span>
+                            <span><strong>From:</strong> {ride.pickup}</span>
+                          </div>
+                          <div className="flex items-start gap-2">
+                            <span className="text-emerald-500 mt-0.5">🎓</span>
+                            <span><strong>To:</strong> {ride.destination}</span>
+                          </div>
+                          {ride.landmark && (
+                            <div className="flex items-start gap-2">
+                              <span className="mt-0.5">📌</span>
+                              <span><strong>Landmark:</strong> {ride.landmark}</span>
+                            </div>
+                          )}
+                          <div className="flex items-start gap-2">
+                            <span className="mt-0.5">🕐</span>
+                            <span><strong>When:</strong> {ride.rideDate === todayStr ? 'Today' : ride.rideDate === tomorrowStr ? 'Tomorrow' : ride.rideDate} at {ride.departureTime}</span>
+                          </div>
+                        </div>
+                        {/* Badges row */}
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${badge.cls}`}>{badge.text}</span>
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">{ride.driver.vehicleDetails.type} • {ride.driver.vehicleDetails.model || 'Vehicle'}</span>
+                          {ride.genderPreference && ride.genderPreference !== 'Any' && (
+                            <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-purple-50 text-purple-600 border border-purple-100">{ride.genderPreference} only</span>
+                          )}
+                        </div>
+                        {/* Contact details */}
+                        <div className="flex flex-wrap gap-1.5 mb-3">
+                          <a
+                            href={`tel:${ride.phone || ride.driver.phone}`}
+className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800 text-[10px] font-bold hover:bg-emerald-100 transition-colors"
+                          >
+  📞 {ride.phone || ride.driver.phone}
+                          </a>
+{(ride.instagramId || ride.driver.instagramId) && (
+                            <a
+                              href={`https://instagram.com/${(ride.instagramId || ride.driver.instagramId).replace(/^@/, '')}`}
+                              target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 border border-pink-100 dark:border-pink-800 text-[10px] font-bold hover:bg-pink-100 transition-colors"
+                            >
+                              📸 {ride.instagramId || ride.driver.instagramId}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      {/* Action footer */}
+                      <div className="flex gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
+                        <a
+                          href={`tel:${ride.phone || ride.driver.phone}`}
+                          className="p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-center transition-colors"
+                          title="Call driver"
+                        >
+                          <i data-lucide="phone" className="h-4 w-4 text-emerald-500"></i>
+                        </a>
+                        {alreadyBooked ? (
+                          <div className="flex-grow py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 text-xs font-bold text-center flex items-center justify-center gap-1">
+                            ✅ Request Sent
+                          </div>
+                        ) : (
+                          <button
+                            disabled={ride.seatsAvailable <= 0}
+                            onClick={() => setJoinModal(ride)}
+ className={`flex-grow py-2.5 rounded-xl text-white font-bold text-xs uppercase tracking-wide transition-all ${
+                              ride.seatsAvailable <= 0
+                                ? 'bg-slate-200 dark:bg-slate-700 cursor-not-allowed text-slate-400'
+                                : 'bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-400 shadow-md shadow-brand-500/20'
+                            }`}
+                          >
+{ride.seatsAvailable <= 0 ? 'Ride Full' : 'Request to Join'}
+</button>
+)}
+</div>
+ </div>
+                  );
+                })}
               </div>
             </div>
-          ))}
-        </div>
-      )}
-
-      {activeSection === 'bookings' && (
-        <div className="space-y-3 fade-in">
-          {myBookings.length === 0 ? (
-            <div className="glass rounded-2xl p-8 text-center">
-              <Icon name="ticket" size={40} className="text-slate-600 mx-auto mb-3"/>
-              <p className="text-slate-400 font-medium">No bookings yet</p>
-              <p className="text-slate-500 text-sm mt-1">Find a ride and join it</p>
-            </div>
-          ) : myBookings.map(r => r && (
-            <div key={r.id} className="glass rounded-2xl p-4 fade-in">
-              <div className="flex items-start gap-3">
-                <Avatar initials={r.driverAvatar} size={40} idx={DEMO_USERS.findIndex(u => u.id === r.userId)}/>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm text-slate-200">{r.driverName}</p>
-                  <p className="text-xs text-slate-400">{r.pickup} → {r.destination}</p>
-                  <div className="flex gap-2 mt-2">
-                    <span className="tag bg-slate-700 text-slate-300 text-xs">{r.time}</span>
-                    <span className="tag bg-emerald-500/20 text-emerald-400 text-xs">₹{r.price}</span>
+          )}
+{/* Join Modal */}
+          {joinModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+<div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 max-w-sm w-full shadow-2xl">
+                <div className="flex items-center gap-3 mb-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                  <img src={joinModal.driver.profilePhoto} className="h-10 w-10 rounded-full bg-slate-100" />
+                  <div>
+                    <h3 className="text-sm font-extrabold text-slate-800 dark:text-white">Join {joinModal.driver.name}'s Ride</h3>
+                    <p className="text-[10px] text-slate-400">{joinModal.pickup} → {joinModal.destination}</p>
                   </div>
+                </div>
+ <form onSubmit={handleRequestJoinSubmit} className="space-y-4">
+                  <div>
+<label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Number of Seats</label>
+                    <div className="flex gap-2">
+                      {[1, 2, 3, 4].filter(n => n <= joinModal.seatsAvailable).map(n => (
+                        <button
+                          key={n} type="button"
+                          onClick={() => setJoinSeats(n)}
+                          className={`flex-1 py-2 text-sm font-bold rounded-xl border transition-all ${joinSeats === n ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-slate-200 dark:border-slate-700 text-slate-400'}`}
+                        >
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+<div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-3 text-xs text-slate-600 dark:text-slate-300 space-y-1">
+                    <p>📍 <strong>Pickup:</strong> {joinModal.pickup}</p>
+                    <p>📅 <strong>Date:</strong> {joinModal.rideDate} at {joinModal.departureTime}</p>
+                    <p>💰 <strong>Total Cost:</strong> ₹{joinModal.price * joinSeats}</p>
+                  </div>
+ <div className="flex gap-2 pt-1">
+                    <button type="button" onClick={() => setJoinModal(null)} className="flex-1 py-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+                      Cancel
+                    </button>
+                    <button type="submit" className="flex-1 py-2.5 bg-gradient-to-r from-brand-600 to-brand-500 text-white rounded-xl text-xs font-bold shadow-md hover:from-brand-500 hover:to-brand-400 transition-all">
+                      Send Request
+                    </button>
+                  </div>
+                </form>
+              </div>
+</div>
+          )}
+        </div>
+      );
+    }
+    // ----------------------------------------------------
+    // PAGE UI: CHAT SECTION
+    // ----------------------------------------------------
+    function ChatPageUI({ currentUser, messages, setMessages, users, bookings, initialPartnerId }) {
+      const [activePartnerId, setActivePartnerId] = useState(null);
+      const [text, setText] = useState('');
+      const [showCallWarning, setShowCallWarning] = useState(false);
+      useLucideRefresh(activePartnerId + showCallWarning);
+      // Setup initial partner if redirected
+      useEffect(() => {
+        if (initialPartnerId) {
+          setActivePartnerId(initialPartnerId);
+        }
+      }, [initialPartnerId]);
+      // Compile unique chat rooms
+      const chatRooms = {};
+      messages.forEach(msg => {
+        if (msg.senderId === currentUser._id || msg.receiverId === currentUser._id) {
+          const partnerId = msg.senderId === currentUser._id ? msg.receiverId : msg.senderId;
+          const partner = users.find(u => u._id === partnerId);
+          if (partner) {
+            chatRooms[partnerId] = {
+              partner,
+              lastText: msg.text,
+              lastTime: msg.createdAt
+            };
+          }
+        }
+      });
+      const partnerList = Object.values(chatRooms);
+      // Find active partner info
+      const activePartner = activePartnerId ? users.find(u => u._id === activePartnerId) : null;
+      // Filter messages for current chat
+      const activeMessages = messages.filter(m => {
+        const c1 = `${currentUser._id}_${activePartnerId}`;
+        const c2 = `${activePartnerId}_${currentUser._id}`;
+        return m.chatId === c1 || m.chatId === c2;
+      });
+      const handleSend = (e) => {
+        e.preventDefault();
+        if (!text.trim() || !activePartnerId) return;
+        const newMsg = {
+          _id: 'm' + (messages.length + 1),
+          chatId: [currentUser._id, activePartnerId].sort().join('_'),
+          senderId: currentUser._id,
+          receiverId: activePartnerId,
+          text,
+          createdAt: new Date().toISOString(),
+          isSeen: false
+        };
+        setMessages(prev => [...prev, newMsg]);
+        setText('');
+      };
+      const handleCallCheck = () => {
+        // Safe check: call details enabled only if booking accepted
+        const hasAccepted = bookings.some(b => {
+          if (b.status !== 'Accepted') return false;
+          return (b.riderId === currentUser._id && b.rideId.startsWith('p') && ridePosts.find(p => p._id === b.rideId)?.driverId === activePartnerId) || 
+                 (b.riderId === activePartnerId && b.rideId.startsWith('p') && ridePosts.find(p => p._id === b.rideId)?.driverId === currentUser._id);
+        });
+        // For demo visual unlock, we can also unlock if Aarav is active partner
+        const isDemoUnlock = activePartnerId === 'u1' || activePartnerId === 'u3';
+        if (hasAccepted || isDemoUnlock) {
+          window.location.href = `tel:${activePartner.phone}`;
+        } else {
+          setShowCallWarning(true);
+        }
+      };
+      return (
+        <div className="mx-auto max-w-7xl px-4 py-8 h-[calc(100vh-8rem)]">
+          <div className="glass-card rounded-3xl border h-full overflow-hidden grid grid-cols-1 md:grid-cols-3">
+            
+            {/* Left rooms list */}
+            <div className="border-r flex flex-col h-full bg-white/40 dark:bg-slate-900/10">
+              <div className="p-4 border-b">
+                <h3 className="text-xs font-extrabold uppercase tracking-widest text-slate-700 dark:text-slate-200">Inbox Chat</h3>
+              </div>
+              
+              <div className="flex-grow overflow-y-auto p-2 space-y-1">
+                {partnerList.length === 0 ? (
+                  <p className="text-xs text-slate-400 text-center py-8">Inbox is empty.</p>
+                ) : (
+                  partnerList.map(item => {
+                    const isSelected = activePartnerId === item.partner._id;
+                    return (
+                      <button
+                        key={item.partner._id} onClick={() => setActivePartnerId(item.partner._id)}
+                        className={`w-full flex items-center gap-3 p-3.5 rounded-2xl text-left transition-all ${
+                          isSelected ? 'bg-brand-500 text-white shadow-md shadow-brand-500/15' : 'hover:bg-slate-100/50'
+                        }`}
+                      >
+                        <img src={item.partner.profilePhoto} className="h-8 w-8 rounded-full bg-slate-100 object-cover" />
+                        <div className="flex-grow min-w-0">
+                          <h4 className="text-xs font-bold truncate">{item.partner.name}</h4>
+                          <p className={`text-[10px] truncate ${isSelected ? 'text-white/80' : 'text-slate-400'}`}>{item.lastText}</p>
+                        </div>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+            {/* Right chat panel */}
+            <div className="md:col-span-2 flex flex-col h-full">
+              {activePartner ? (
+                <>
+                  {/* Header */}
+                  <div className="p-4 border-b flex justify-between items-center bg-white/50 dark:bg-slate-900/40">
+                    <div className="flex items-center gap-2">
+                      <img src={activePartner.profilePhoto} className="h-8 w-8 rounded-full bg-slate-100" />
+                      <div>
+                        <h4 className="text-xs font-bold">{activePartner.name}</h4>
+                        <span className="text-[9px] text-slate-400 font-semibold">{activePartner.college} Connection</span>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={handleCallCheck}
+                      className="rounded-xl border p-2 text-brand-500 hover:bg-slate-50 flex items-center gap-1 text-xs font-bold"
+                    >
+                      <i data-lucide="phone" className="h-4 w-4"></i>
+                      <span>Safe Call</span>
+                    </button>
+                  </div>
+                  {/* Messages Feed */}
+                  <div className="flex-grow overflow-y-auto p-4 space-y-3">
+                    {activeMessages.map(m => {
+                      const isMe = m.senderId === currentUser._id;
+                      return (
+                        <div key={m._id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[70%] rounded-2xl px-4 py-2.5 text-xs ${
+                            isMe ? 'bg-gradient-to-tr from-brand-600 to-brand-500 text-white shadow-md' : 'bg-slate-100 text-slate-800'
+                          }`}>
+                            <p>{m.text}</p>
+                            <span className="text-[8px] opacity-75 block text-right mt-1">
+                              {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Typing input */}
+                  <form onSubmit={handleSend} className="p-4 border-t flex gap-2">
+                    <input 
+                      type="text" placeholder="Discuss landmarks or schedule details..." value={text} onChange={e => setText(e.target.value)}
+                      className="flex-grow px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none dark:text-white"
+                    />
+                    <button type="submit" className="p-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-white"><i data-lucide="send" className="h-4 w-4"></i></button>
+                  </form>
+                </>
+              ) : (
+                <div className="flex flex-col items-center justify-center text-center p-8 h-full">
+                  <span className="text-3xl block mb-1">💬</span>
+                  <p className="text-xs font-bold text-slate-400 uppercase">Select active carpool inbox</p>
+                </div>
+              )}
+            </div>
+          </div>
+          {/* Safe calling details modal */}
+          {showCallWarning && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+              <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border max-w-sm w-full text-center shadow-2xl relative">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-yellow-50 text-yellow-600 mx-auto mb-3">
+                  <i data-lucide="shield-check" className="h-6 w-6"></i>
+                </span>
+                <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">Safe Calling Check</h3>
+                <p className="text-xs text-slate-500 mt-2">
+                  Classmate phone numbers are kept locked for anti-spam safety until a booking request is officially approved.
+                </p>
+                <button onClick={() => setShowCallWarning(false)} className="w-full py-2.5 bg-brand-500 text-white text-xs font-bold rounded-xl shadow-md mt-4">Understood</button>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+    // ----------------------------------------------------
+    // PAGE UI: PROFILE DETAILS
+     function ProfileUI({ currentUser, setCurrentUser, users, setUsers, addNotification }) {
+      const [name, setName] = useState(currentUser?.name || '');
+      const [phone, setPhone] = useState(currentUser?.phone || '');
+      const [instagramId, setInstagramId] = useState(currentUser?.instagramId || '');
+      const [emergencyContact, setEmergencyContact] = useState(currentUser?.emergencyContact || '');
+      
+      const [vehicleType, setVehicleType] = useState(currentUser?.vehicleDetails?.type || 'None');
+      const [vehicleModel, setVehicleModel] = useState(currentUser?.vehicleDetails?.model || '');
+      const [vehicleNumber, setVehicleNumber] = useState(currentUser?.vehicleDetails?.number || '');
+      useLucideRefresh(vehicleType);
+      const handleSave = (e) => {
+        e.preventDefault();
+        const updatedUser = {
+          ...currentUser,
+          name, phone, instagramId, emergencyContact,
+          vehicleDetails: { type: vehicleType, model: vehicleModel, number: vehicleNumber }
+        };
+        setCurrentUser(updatedUser);
+        setUsers(prev => prev.map(u => u._id === currentUser._id ? updatedUser : u));
+        upsertSupabaseCloud('users', currentUser._id, updatedUser);
+        
+        addNotification({ title: 'Profile Updated', message: 'Details saved successfully!' });
+        alert('Student profile changes saved successfully!');
+      };
+      return (
+        <div className="mx-auto max-w-4xl px-4 py-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div>
+            <div className="glass-card rounded-3xl p-6 border text-center relative overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-brand-500 to-emerald-500"></div>
+              <img src={currentUser.profilePhoto} className="h-20 w-20 rounded-full border bg-slate-100 mx-auto mb-3 shadow-md" />
+              <h3 className="text-sm font-extrabold text-slate-800 dark:text-slate-100">{currentUser.name}</h3>
+              <p className="text-[10px] text-slate-400 mt-0.5">{currentUser.college}</p>
+              
+              <div className="mt-4 border-t pt-4 text-left space-y-2 text-xs text-slate-500">
+                <p>📧 {currentUser.email}</p>
+                <p>📞 {currentUser.phone}</p>
+                {currentUser.instagramId && <p>📸 {currentUser.instagramId}</p>}
+              </div>
+            </div>
+          </div>
+          <div className="md:col-span-2">
+            <div className="glass-card rounded-3xl p-6 border">
+              <h3 className="text-xs font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest border-b pb-2 mb-4">Edit Student Details</h3>
+              
+              <form onSubmit={handleSave} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-450 uppercase mb-1">Full Name</label>
+                    <input 
+                      type="text" required value={name} onChange={e => setName(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-450 uppercase mb-1">Phone Contact</label>
+                    <input 
+                      type="tel" required value={phone} onChange={e => setPhone(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none dark:text-white"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-450 uppercase mb-1">Emergency contact</label>
+                    <input 
+                      type="text" required value={emergencyContact} onChange={e => setEmergencyContact(e.target.value)} placeholder="+91 99999 88888"
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-455 uppercase mb-1">Instagram Username</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2 text-xs font-bold text-slate-400">@</span>
+                      <input 
+                        type="text" value={instagramId} onChange={e => setInstagramId(e.target.value.replace(/^@/, ''))} placeholder="username"
+                        className="w-full pl-6 pr-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none dark:text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="border-t pt-3">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-2">My Commuter Vehicle</label>
+                  <div className="grid grid-cols-3 gap-2 mb-2">
+                    {['None', 'Bike', 'Car'].map(t => (
+                      <button
+                        key={t} type="button" onClick={() => setVehicleType(t)}
+                        className={`py-1 text-xs font-bold rounded-lg border transition-all ${vehicleType === t ? 'border-brand-500 bg-brand-50 text-brand-600' : 'border-slate-200'}`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                  {vehicleType !== 'None' && (
+                    <div className="grid grid-cols-2 gap-3 mt-2">
+                      <input 
+                        type="text" placeholder="Model e.g. Royal Enfield" required value={vehicleModel} onChange={e => setVehicleModel(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border bg-white/50 outline-none"
+                      />
+                      <input 
+                        type="text" placeholder="License Plate No." required value={vehicleNumber} onChange={e => setVehicleNumber(e.target.value)}
+                        className="w-full px-3 py-2 text-xs rounded-xl border bg-white/50 outline-none"
+                      />
+                    </div>
+                  )}
+                </div>
+                <button type="submit" className="w-full py-2.5 bg-gradient-to-tr from-brand-600 to-brand-500 hover:from-brand-500 hover:to-brand-600 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-md mt-4">Save Changes</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    // ----------------------------------------------------
+    // PAGE UI: ADMIN PANEL
+    // ----------------------------------------------------
+    function AdminPanelUI({ currentUser, users, setUsers, colleges, setColleges }) {
+      const [newColName, setNewColName] = useState('');
+      useLucideRefresh(true);
+      const handleAddColSubmit = (e) => {
+        e.preventDefault();
+        if (!newColName.trim()) return;
+        setColleges(prev => [...prev, { name: newColName }]);
+        setNewColName('');
+      };
+      const handleVerifyToggle = (uId, current) => {
+        setUsers(prev => prev.map(u => {
+          if (u._id === uId) return { ...u, isVerified: !current };
+          return u;
+        }));
+      };
+      const handleBanToggle = (uId, current) => {
+        setUsers(prev => prev.map(u => {
+          if (u._id === uId) return { ...u, isBanned: !current };
+          return u;
+        }));
+      };
+      return (
+        <div className="mx-auto max-w-7xl px-4 py-8 grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Add Campus colleges */}
+          <div>
+            <div className="glass-card rounded-3xl p-5 border space-y-4">
+              <h3 className="text-xs font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest border-b pb-2">Register Campus Zone</h3>
+              
+              <form onSubmit={handleAddColSubmit} className="space-y-3">
+                <input 
+                  type="text" required value={newColName} onChange={e => setNewColName(e.target.value)} placeholder="University Campus Name"
+                  className="w-full px-3 py-2 text-xs rounded-xl border outline-none bg-white/50"
+                />
+                <button type="submit" className="w-full py-2 bg-brand-500 hover:bg-brand-600 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1">
+                  <i data-lucide="plus" className="h-3.5 w-3.5"></i> Add Campus
+                </button>
+              </form>
+              <div className="border-t pt-3">
+                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Campus Zone List</label>
+                <div className="space-y-1.5 max-h-52 overflow-y-auto">
+                  {colleges.map((c, i) => (
+                    <div key={i} className="flex justify-between items-center text-xs font-semibold bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border">
+                      <span>{c.name}</span>
+                      <span className="text-[9px] font-bold text-emerald-500">Active</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Profile Tab ──────────────────────────────────────────────
-function ProfileTab({ currentUser, onLogout }) {
-  const users = getUsers();
-  const user = users.find(u => u.id === currentUser.id) || currentUser;
-  const myRidesCount = getRides().filter(r => r.userId === user.id).length;
-  const myBookingsCount = getBookings().filter(b => b.userId === user.id).length;
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h2 className="text-xl font-bold text-slate-100 mb-1">Profile</h2>
-        <p className="text-sm text-slate-400">Your account details</p>
-      </div>
-
-      <div className="glass rounded-2xl p-6 text-center">
-        <div className="flex justify-center mb-3">
-          <Avatar initials={user.avatar} size={72} idx={DEMO_USERS.findIndex(u => u.id === user.id)}/>
-        </div>
-        <h3 className="text-xl font-bold text-slate-100">{user.name}</h3>
-        <p className="text-sm text-slate-400 mt-0.5">{user.email}</p>
-        <div className="mt-3 flex justify-center">
-          <span className="tag bg-blue-500/20 text-blue-400 text-xs">
-            <Icon name="graduation-cap" size={12} className="mr-1"/> {user.college}
-          </span>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="glass rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-blue-400">{myRidesCount}</p>
-          <p className="text-xs text-slate-500 mt-0.5">Rides Posted</p>
-        </div>
-        <div className="glass rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-emerald-400">{myBookingsCount}</p>
-          <p className="text-xs text-slate-500 mt-0.5">Rides Joined</p>
-        </div>
-      </div>
-
-      {user.vehicle && (
-        <div className="glass rounded-xl p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-            <Icon name={user.vehicle === 'Bike' ? 'bike' : 'car'} size={20} className="text-blue-400"/>
           </div>
-          <div>
-            <p className="text-xs text-slate-400">Vehicle</p>
-            <p className="text-sm font-semibold text-slate-200">{user.vehicle} – {user.model}</p>
-          </div>
-        </div>
-      )}
-
-      <div className="glass rounded-xl p-4 space-y-3">
-        <h4 className="text-sm font-semibold text-slate-300">About CampusRide</h4>
-        <p className="text-xs text-slate-500 leading-relaxed">
-          CampusRide connects students for safe, affordable campus commutes.
-          Share rides, save money, and reduce your carbon footprint.
-        </p>
-      </div>
-
-      <button onClick={onLogout}
-        className="w-full py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all font-semibold text-sm flex items-center justify-center gap-2">
-        <Icon name="log-out" size={16}/> Log Out
-      </button>
-    </div>
-  );
-}
-
-// ─── Main App ─────────────────────────────────────────────────
-function App() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [tab, setTab] = useState('dashboard');
-  const [toastData, setToastData] = useState(null);
-
-  useEffect(() => {
-    initStorage();
-    const saved = localStorage.getItem('cr_current_user');
-    if (saved) { try { setCurrentUser(JSON.parse(saved)); } catch(e) {} }
-  }, []);
-
-  function handleLogin(user) {
-    setCurrentUser(user);
-    localStorage.setItem('cr_current_user', JSON.stringify(user));
-  }
-
-  function handleLogout() {
-    setCurrentUser(null);
-    localStorage.removeItem('cr_current_user');
-    setTab('dashboard');
-  }
-
-  function toast(msg, type='success') {
-    setToastData({ msg, type, key: Date.now() });
-  }
-
-  if (!currentUser) return <AuthScreen onLogin={handleLogin}/>;
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Header */}
-      <header className="glass sticky top-0 z-40 px-4 py-3 border-b border-slate-700/50">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-              <Icon name="car" size={16} className="text-white"/>
+          {/* Students control list table */}
+          <div className="lg:col-span-2">
+            <div className="glass-card rounded-3xl p-5 border">
+              <h3 className="text-xs font-extrabold text-slate-700 dark:text-slate-200 uppercase tracking-widest border-b pb-2 mb-3">Student Accounts Moderation</h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b font-bold text-[9px] uppercase tracking-wider text-slate-400">
+                      <th className="py-2">Student Info</th>
+                      <th className="py-2">College Campus</th>
+                      <th className="py-2">Verification</th>
+                      <th className="py-2 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map(u => (
+                      <tr key={u._id} className="border-b last:border-0 hover:bg-slate-50/50">
+                        <td className="py-3 flex items-center gap-2">
+                          <img src={u.profilePhoto} className="h-7 w-7 rounded-full bg-slate-100" />
+                          <div>
+                            <p className="font-bold">{u.name}</p>
+                            <p className="text-[9px] text-slate-400">{u.email}</p>
+                          </div>
+                        </td>
+                        <td className="py-3 font-semibold text-slate-500">{u.college}</td>
+                        <td className="py-3">
+                          <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${u.isVerified ? 'bg-emerald-50 text-emerald-600' : 'bg-yellow-50 text-yellow-600'}`}>
+                            {u.isVerified ? 'Verified' : 'Pending'}
+                          </span>
+                        </td>
+                        <td className="py-3 text-right">
+                          <div className="flex justify-end gap-1.5">
+                            <button 
+                              onClick={() => handleVerifyToggle(u._id, u.isVerified)}
+                              className="px-2 py-1 text-[9px] font-bold border rounded-lg hover:bg-slate-50 bg-white"
+                            >
+                              {u.isVerified ? 'Revoke' : 'Verify'}
+                            </button>
+                            <button 
+                              onClick={() => handleBanToggle(u._id, u.isBanned)}
+                              className={`px-2 py-1 text-[9px] font-bold border rounded-lg hover:bg-red-50 hover:text-red-500 ${
+                                u.isBanned ? 'bg-red-50 text-red-500' : 'bg-white'
+                              }`}
+                            >
+                              {u.isBanned ? 'Banned' : 'Ban'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-            <span className="font-bold text-base gradient-text">CampusRide</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 hidden sm:block">{currentUser.name}</span>
-            <button onClick={() => setTab('profile')} className="p-1.5 rounded-xl hover:bg-slate-700/50 transition-colors">
-              <Avatar initials={currentUser.avatar} size={30} idx={DEMO_USERS.findIndex(u => u.id === currentUser.id)}/>
-            </button>
           </div>
         </div>
-      </header>
-
-      {/* Main content */}
-      <main className="max-w-lg mx-auto px-4 pt-4 pb-28">
-        {tab === 'dashboard' && <DashboardTab currentUser={currentUser} toast={toast}/>}
-        {tab === 'find' && <FindRideTab currentUser={currentUser} toast={toast}/>}
-        {tab === 'post' && <PostRideTab currentUser={currentUser} toast={toast}/>}
-        {tab === 'profile' && <ProfileTab currentUser={currentUser} onLogout={handleLogout}/>}
-      </main>
-
-      <BottomNav tab={tab} setTab={setTab}/>
-
-      {toastData && <Toast key={toastData.key} msg={toastData.msg} type={toastData.type} onClose={() => setToastData(null)}/>}
-    </div>
-  );
-}
-
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
-</script>
+      );
+    }
+    // Render React root
+    const rootEl = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootEl);
+    root.render(<App />);
+  </script>
 </body>
 </html>
