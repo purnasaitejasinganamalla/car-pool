@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CampusRide – Campus Carpool Platform</title>
+<meta name="description" content="Find or post rides between college campuses. Safe, affordable, student-friendly carpooling."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { outfit: ['Outfit', 'sans-serif'] },
+        colors: {
+          brand: { DEFAULT: '#3b82f6', dark: '#2563eb', light: '#93c5fd' }
+        }
+      }
+    }
+  };
+</script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+  * { font-family: 'Outfit', sans-serif; box-sizing: border-box; }
+  body { margin: 0; background: #0f172a; color: #f1f5f9; }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: #1e293b; }
+  ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 2px; }
+  .glass { background: rgba(30,41,59,0.8); backdrop-filter: blur(12px); border: 1px solid rgba(148,163,184,0.1); }
+  .glass-light { background: rgba(51,65,85,0.5); backdrop-filter: blur(8px); border: 1px solid rgba(148,163,184,0.08); }
+  #map { height: 300px; width: 100%; border-radius: 12px; z-index: 1; }
+  .leaflet-container { border-radius: 12px; }
+  .nav-item { transition: all 0.2s ease; }
+  .nav-item:hover { transform: translateY(-2px); }
+  .nav-item.active { color: #3b82f6; }
+  .card-hover { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+  .card-hover:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+  .btn-primary { background: linear-gradient(135deg, #3b82f6, #6366f1); transition: all 0.2s ease; }
+  .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 8px 20px rgba(59,130,246,0.4); }
+  .btn-secondary { background: rgba(51,65,85,0.8); border: 1px solid rgba(148,163,184,0.2); transition: all 0.2s ease; }
+  .btn-secondary:hover { border-color: #3b82f6; color: #3b82f6; }
+  .input-field { background: rgba(15,23,42,0.8); border: 1px solid rgba(148,163,184,0.15); color: #f1f5f9; transition: border-color 0.2s; }
+  .input-field:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+  .input-field::placeholder { color: #64748b; }
+  .vehicle-card { transition: all 0.2s ease; cursor: pointer; }
+  .vehicle-card:hover { border-color: #3b82f6; background: rgba(59,130,246,0.1); }
+  .vehicle-card.selected { border-color: #3b82f6; background: rgba(59,130,246,0.15); box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+  .tag { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+  .animate-pulse-slow { animation: pulse 3s cubic-bezier(0.4,0,0.6,1) infinite; }
+  @keyframes fadeInUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  .fade-in { animation: fadeInUp 0.35s ease forwards; }
+  .gradient-text { background: linear-gradient(135deg, #3b82f6, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ─── Constants ────────────────────────────────────────────────
+const DATA_VERSION = 'v4';
+const SUPABASE_URL = 'https://bjdpfsgfyjmdpioxcgpm.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_pVjsFSffW9oykqxmywOdkQ_D43QCnN6';
+const LIQ_KEY = 'pk.481323876891a2b0607386a3ef75c7a0';
+
+const COLLEGES = [
+  'IIT Bombay','Delhi University (DU)','BITS Pilani','PES University',
+  'New Horizon College of Engineering','Dayananda Sagar College of Engineering',
+  'MSRIT Bangalore','BMS College of Engineering','RV College of Engineering',
+  'IIT Delhi','IIT Madras','VIT Vellore','NIT Trichy',
+  'Amity University Noida','Christ University Bangalore'
+];
+
+const DEMO_USERS = [
+  { id:'u1', name:'Aarav Sharma',  email:'aarav@iitb.ac.in',   password:'1234', college:'IIT Bombay',           vehicle:'Car',  model:'Honda City',        avatar:'AS' },
+  { id:'u2', name:'Ananya Iyer',   email:'ananya@iitb.ac.in',  password:'1234', college:'IIT Bombay',           vehicle:'Bike', model:'Royal Enfield 350', avatar:'AI' },
+  { id:'u3', name:'Rohan Verma',   email:'rohan@iitb.ac.in',   password:'1234', college:'IIT Bombay',           vehicle:null,   model:null,                avatar:'RV' },
+  { id:'u4', name:'Sneha Patel',   email:'sneha@du.ac.in',     password:'1234', college:'Delhi University (DU)',vehicle:'Car',  model:'Hyundai i20',       avatar:'SP' },
+];
+
+const DEMO_RIDES = [
+  {
+    id:'r1', userId:'u1', driverName:'Aarav Sharma', driverAvatar:'AS',
+    college:'IIT Bombay', pickup:'Powai Lake Gate', destination:'IIT Bombay',
+    landmark:'Near Hiranandani Hospital', route:'Powai → JVLR → IIT Gate',
+    date: getTodayStr(), time:'08:30', seats:2, price:60,
+    gender:'Any', vehicleType:'Car', vehicleModel:'Honda City',
+    phone:'+91 98765 43210', instagram:'@aarav_sharma',
+    schedule:'Today', vehicleImg: null
+  },
+  {
+    id:'r2', userId:'u2', driverName:'Ananya Iyer', driverAvatar:'AI',
+    college:'IIT Bombay', pickup:'Ghatkopar Station', destination:'IIT Bombay',
+    landmark:'Platform 1 exit', route:'Ghatkopar → LBS Marg → IIT Gate',
+    date: getTodayStr(), time:'09:00', seats:1, price:40,
+    gender:'Female', vehicleType:'Bike', vehicleModel:'Royal Enfield 350',
+    phone:'+91 91234 56789', instagram:'@ananya_iyer',
+    schedule:'Today', vehicleImg: null
+  },
+  {
+    id:'r3', userId:'u4', driverName:'Sneha Patel', driverAvatar:'SP',
+    college:'Delhi University (DU)', pickup:'Connaught Place', destination:'Delhi University (DU)',
+    landmark:'Block A Metro Exit', route:'CP → Ring Road → Maurice Nagar',
+    date: getTodayStr(), time:'07:45', seats:3, price:80,
+    gender:'Any', vehicleType:'Car', vehicleModel:'Hyundai i20',
+    phone:'+91 93333 22222', instagram:'@sneha_p',
+    schedule:'Today', vehicleImg: null
+  },
+  {
+    id:'r4', userId:'u4', driverName:'Sneha Patel', driverAvatar:'SP',
+    college:'Delhi University (DU)', pickup:'Rajouri Garden', destination:'Delhi University (DU)',
+    landmark:'Near Green Park Metro', route:'Rajouri Garden → Ring Road → DU',
+    date: getTomorrowStr(), time:'08:00', seats:2, price:70,
+    gender:'Female', vehicleType:'Car', vehicleModel:'Hyundai i20',
+    phone:'+91 93333 22222', instagram:'@sneha_p',
+    schedule:'Tomorrow', vehicleImg: null
+  },
+];
+
+function getTodayStr() {
+  const d = new Date();
+  return d.toISOString().split('T')[0];
+}
+function getTomorrowStr() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().split('T')[0];
+}
+
+// ─── LocalStorage helpers ─────────────────────────────────────
+function initStorage() {
+  const ver = localStorage.getItem('cr_version');
+  if (ver !== DATA_VERSION) {
+    ['cr_users','cr_rides','cr_bookings'].forEach(k => localStorage.removeItem(k));
+    localStorage.setItem('cr_version', DATA_VERSION);
+  }
+  if (!localStorage.getItem('cr_users')) {
+    localStorage.setItem('cr_users', JSON.stringify(DEMO_USERS));
+  }
+  if (!localStorage.getItem('cr_rides')) {
+    localStorage.setItem('cr_rides', JSON.stringify(DEMO_RIDES));
+  }
+  if (!localStorage.getItem('cr_bookings')) {
+    localStorage.setItem('cr_bookings', JSON.stringify([]));
+  }
+}
+
+function getUsers() { return JSON.parse(localStorage.getItem('cr_users') || '[]'); }
+function getRides() { return JSON.parse(localStorage.getItem('cr_rides') || '[]'); }
+function getBookings() { return JSON.parse(localStorage.getItem('cr_bookings') || '[]'); }
+function saveRides(rides) { localStorage.setItem('cr_rides', JSON.stringify(rides)); }
+function saveBookings(bookings) { localStorage.setItem('cr_bookings', JSON.stringify(bookings)); }
+
+// ─── Supabase helper ──────────────────────────────────────────
+async function supabaseInsert(table, data) {
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(data)
+    });
+  } catch(e) { /* offline – localStorage is source of truth */ }
+}
+
+// ─── Icon helper ──────────────────────────────────────────────
+function Icon({ name, size=18, className='' }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current && window.lucide) {
+      ref.current.innerHTML = '';
+      const el = document.createElement('i');
+      el.setAttribute('data-lucide', name);
+      el.style.width = size + 'px';
+      el.style.height = size + 'px';
+      ref.current.appendChild(el);
+      window.lucide.createIcons({ nodes: [el] });
+    }
+  }, [name, size]);
+  return <span ref={ref} className={'inline-flex items-center justify-center ' + className}/>;
+}
+
+// ─── Avatar ───────────────────────────────────────────────────
+const AVATAR_COLORS = ['from-blue-500 to-indigo-600','from-purple-500 to-pink-500','from-emerald-500 to-teal-600','from-orange-400 to-red-500'];
+function Avatar({ initials, size=40, idx=0 }) {
+  const grad = AVATAR_COLORS[idx % AVATAR_COLORS.length];
+  return (
+    <div className={`rounded-full flex items-center justify-center font-bold text-white bg-gradient-to-br ${grad} shrink-0`}
+      style={{ width: size, height: size, fontSize: size * 0.38 }}>
+      {initials}
+    </div>
+  );
+}
+
+// ─── Toast ────────────────────────────────────────────────────
+function Toast({ msg, type, onClose }) {
+  useEffect(() => { const t = setTimeout(onClose, 3000); return () => clearTimeout(t); }, []);
+  const bg = type === 'error' ? 'bg-red-500/90' : type === 'warn' ? 'bg-yellow-500/90' : 'bg-emerald-500/90';
+  return (
+    <div className={`fixed top-4 right-4 z-50 ${bg} text-white px-5 py-3 rounded-xl shadow-xl fade-in flex items-center gap-3 max-w-xs`}>
+      <Icon name={type==='error'?'x-circle':type==='warn'?'alert-triangle':'check-circle'} size={18}/>
+      <span className="text-sm font-medium">{msg}</span>
+      <button onClick={onClose} className="ml-2 opacity-70 hover:opacity-100"><Icon name="x" size={14}/></button>
+    </div>
+  );
+}
+
+// ─── Auth Screen ──────────────────────────────────────────────
+function AuthScreen({ onLogin }) {
+  const [mode, setMode] = useState('login');
+  const [form, setForm] = useState({ name:'', email:'', password:'', college:'IIT Bombay' });
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  function upd(k, v) { setForm(f => ({ ...f, [k]: v })); setErr(''); }
+
+  function submit(e) {
+    e.preventDefault();
+    setLoading(true);
+    setErr('');
+    setTimeout(() => {
+      const users = getUsers();
+      if (mode === 'login') {
+        const u = users.find(u => u.email === form.email && u.password === form.password);
+        if (!u) { setErr('Invalid email or password'); setLoading(false); return; }
+        onLogin(u);
+      } else {
+        if (!form.name || !form.email || !form.password) { setErr('All fields required'); setLoading(false); return; }
+        if (users.find(u => u.email === form.email)) { setErr('Email already registered'); setLoading(false); return; }
+        const newUser = { id: 'u_' + Date.now(), name: form.name, email: form.email, password: form.password, college: form.college, vehicle: null, model: null, avatar: form.name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) };
+        const updated = [...users, newUser];
+        localStorage.setItem('cr_users', JSON.stringify(updated));
+        onLogin(newUser);
+      }
+      setLoading(false);
+    }, 500);
+  }
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl"/>
+        <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl"/>
+      </div>
+      <div className="w-full max-w-md glass rounded-2xl p-8 relative z-10 fade-in">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 mb-4 shadow-lg shadow-blue-500/30">
+            <Icon name="car" size={32} className="text-white"/>
+          </div>
+          <h1 className="text-3xl font-bold gradient-text">CampusRide</h1>
+          <p className="text-slate-400 text-sm mt-1">Campus Carpool Made Simple</p>
+        </div>
+        <div className="flex rounded-xl overflow-hidden mb-6 glass-light p-1">
+          {['login','register'].map(m => (
+            <button key={m} onClick={() => { setMode(m); setErr(''); }}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold capitalize transition-all ${mode===m ? 'bg-brand text-white shadow-md' : 'text-slate-400 hover:text-white'}`}>
+              {m === 'login' ? 'Log In' : 'Register'}
+            </button>
+          ))}
+        </div>
+        <form onSubmit={submit} className="space-y-4">
+          {mode === 'register' && (
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Full Name</label>
+              <input className="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="Your full name" value={form.name} onChange={e => upd('name', e.target.value)}/>
+            </div>
+          )}
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Email</label>
+            <input type="email" className="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="student@college.ac.in" value={form.email} onChange={e => upd('email', e.target.value)}/>
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Password</label>
+            <input type="password" className="input-field w-full rounded-xl px-4 py-3 text-sm" placeholder="••••••••" value={form.password} onChange={e => upd('password', e.target.value)}/>
+          </div>
+          {mode === 'register' && (
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">College</label>
+              <select className="input-field w-full rounded-xl px-4 py-3 text-sm" value={form.college} onChange={e => upd('college', e.target.value)}>
+                {COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+          )}
+          {err && <p className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">{err}</p>}
+          <button type="submit" disabled={loading}
+            className="btn-primary w-full py-3 rounded-xl text-white font-semibold text-sm mt-2 disabled:opacity-50 flex items-center justify-center gap-2">
+            {loading ? <><Icon name="loader-2" size={16} className="animate-spin"/>Processing...</> : mode === 'login' ? 'Log In' : 'Create Account'}
+          </button>
+        </form>
+        {mode === 'login' && (
+          <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+            <p className="text-xs text-blue-400 font-semibold mb-1">Demo Accounts (pwd: 1234)</p>
+            <div className="space-y-1">
+              {DEMO_USERS.map(u => (
+                <button key={u.id} onClick={() => { setForm(f => ({ ...f, email: u.email, password:'1234' })); }}
+                  className="text-xs text-slate-300 hover:text-blue-400 transition-colors block">
+                  {u.name} — {u.email}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Bottom Nav ───────────────────────────────────────────────
+function BottomNav({ tab, setTab }) {
+  const items = [
+    { id:'dashboard', icon:'layout-dashboard', label:'Home' },
+    { id:'find',      icon:'search',           label:'Find Ride' },
+    { id:'post',      icon:'plus-circle',      label:'Post Ride' },
+    { id:'profile',   icon:'user-circle',      label:'Profile' },
+  ];
+  return (
+    <nav className="fixed bottom-0 left-0 right-0 z-40 glass border-t border-slate-700/50 px-2 pb-safe">
+      <div className="max-w-lg mx-auto flex justify-around">
+        {items.map(it => (
+          <button key={it.id} onClick={() => setTab(it.id)}
+            className={`nav-item flex flex-col items-center py-3 px-4 gap-1 ${tab === it.id ? 'active' : 'text-slate-500'}`}>
+            <Icon name={it.icon} size={22}/>
+            <span className="text-[10px] font-semibold">{it.label}</span>
+          </button>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+// ─── RideCard ─────────────────────────────────────────────────
+function RideCard({ ride, currentUser, onBook }) {
+  const [booked, setBooked] = useState(false);
+  const [showContact, setShowContact] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      const bookings = getBookings();
+      setBooked(bookings.some(b => b.rideId === ride.id && b.userId === currentUser.id));
+    }
+  }, []);
+
+  function handleBook() {
+    if (!currentUser) return;
+    const bookings = getBookings();
+    if (bookings.some(b => b.rideId === ride.id && b.userId === currentUser.id)) return;
+    const booking = { id: 'b_' + Date.now(), rideId: ride.id, userId: currentUser.id, bookedAt: new Date().toISOString() };
+    const updated = [...bookings, booking];
+    saveBookings(updated);
+    supabaseInsert('bookings', { ride_id: ride.id, user_id: currentUser.id });
+    setBooked(true);
+    if (onBook) onBook();
+  }
+
+  const isOwn = currentUser && ride.userId === currentUser.id;
+  const avatarIdx = DEMO_USERS.findIndex(u => u.id === ride.userId);
+
+  return (
+    <div className="glass rounded-2xl p-4 card-hover fade-in">
+      <div className="flex items-start gap-3 mb-3">
+        <Avatar initials={ride.driverAvatar || ride.driverName?.slice(0,2)} size={44} idx={avatarIdx >= 0 ? avatarIdx : 0}/>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-bold text-base text-slate-100 truncate">{ride.driverName}</h3>
+            <span className="tag bg-blue-500/20 text-blue-400 shrink-0">
+              {ride.seats} seat{ride.seats !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 truncate">{ride.college}</p>
+        </div>
+      </div>
+
+      <div className="space-y-2 mb-3">
+        <div className="flex items-center gap-2 text-sm">
+          <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+            <Icon name="map-pin" size={11} className="text-emerald-400"/>
+          </span>
+          <span className="text-slate-300 truncate">{ride.pickup}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center shrink-0">
+            <Icon name="flag" size={11} className="text-blue-400"/>
+          </span>
+          <span className="text-slate-300 truncate">{ride.destination}</span>
+        </div>
+        {ride.route && (
+          <div className="flex items-center gap-2 text-xs">
+            <span className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center shrink-0">
+              <Icon name="route" size={11} className="text-purple-400"/>
+            </span>
+            <span className="text-slate-500 truncate">{ride.route}</span>
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2 mb-3">
+        <span className="tag bg-slate-700 text-slate-300">
+          <Icon name="clock" size={11} className="mr-1"/> {ride.time}
+        </span>
+        <span className="tag bg-emerald-500/20 text-emerald-400 font-bold">
+          ₹{ride.price}
+        </span>
+        {ride.gender && ride.gender !== 'Any' && (
+          <span className="tag bg-pink-500/20 text-pink-400">
+            <Icon name="user" size={11} className="mr-1"/> {ride.gender} only
+          </span>
+        )}
+        <span className="tag bg-indigo-500/20 text-indigo-400">
+          <Icon name={ride.vehicleType === 'Bike' ? 'bike' : 'car'} size={11} className="mr-1"/>
+          {ride.vehicleModel || ride.vehicleType}
+        </span>
+      </div>
+
+      {ride.vehicleImg && (
+        <div className="mb-3 rounded-xl overflow-hidden h-28 bg-slate-800">
+          <img src={ride.vehicleImg} alt="Vehicle" className="w-full h-full object-cover"/>
+        </div>
+      )}
+
+      <div className="border-t border-slate-700/50 pt-3 flex items-center justify-between gap-2">
+        <button onClick={() => setShowContact(!showContact)}
+          className="btn-secondary text-xs px-3 py-2 rounded-lg flex items-center gap-1.5">
+          <Icon name="phone" size={13}/> Contact
+        </button>
+        {!isOwn && (
+          <button onClick={handleBook} disabled={booked}
+            className={`text-xs px-4 py-2 rounded-lg font-semibold flex items-center gap-1.5 transition-all ${booked ? 'bg-emerald-500/20 text-emerald-400 cursor-default' : 'btn-primary text-white'}`}>
+            {booked ? <><Icon name="check" size={13}/> Joined</> : <><Icon name="plus" size={13}/> Join Ride</>}
+          </button>
+        )}
+        {isOwn && <span className="tag bg-yellow-500/20 text-yellow-400 text-xs">Your Ride</span>}
+      </div>
+
+      {showContact && (
+        <div className="mt-3 p-3 glass-light rounded-xl space-y-1.5 fade-in">
+          {ride.phone && (
+            <div className="flex items-center gap-2 text-sm">
+              <Icon name="phone" size={14} className="text-emerald-400"/>
+              <span className="text-slate-300">{ride.phone}</span>
+            </div>
+          )}
+          {ride.instagram && (
+            <div className="flex items-center gap-2 text-sm">
+              <Icon name="instagram" size={14} className="text-pink-400"/>
+              <span className="text-slate-300">{ride.instagram}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Find Ride Tab ────────────────────────────────────────────
+function FindRideTab({ currentUser, toast }) {
+  const [filters, setFilters] = useState({ college:'', date:'', vehicleType:'', gender:'' });
+  const [results, setResults] = useState(null);
+  const [searched, setSearched] = useState(false);
+
+  function upd(k, v) { setFilters(f => ({ ...f, [k]: v })); }
+
+  function search(e) {
+    e.preventDefault();
+    const rides = getRides();
+    let filtered = rides;
+    if (filters.college) filtered = filtered.filter(r => r.college === filters.college);
+    if (filters.date) filtered = filtered.filter(r => r.date === filters.date);
+    if (filters.vehicleType) filtered = filtered.filter(r => r.vehicleType === filters.vehicleType);
+    if (filters.gender && filters.gender !== 'Any') filtered = filtered.filter(r => r.gender === filters.gender || r.gender === 'Any');
+    setResults(filtered);
+    setSearched(true);
+  }
+
+  function handleBook() {
+    toast('Ride booked!', 'success');
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-slate-100 mb-1">Find a Ride</h2>
+        <p className="text-sm text-slate-400">Search available rides to your campus</p>
+      </div>
+
+      <form onSubmit={search} className="glass rounded-2xl p-4 space-y-3">
+        <div>
+          <label className="text-xs text-slate-400 mb-1 block">Destination College</label>
+          <select className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={filters.college} onChange={e => upd('college', e.target.value)}>
+            <option value="">All Colleges</option>
+            {COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Date</label>
+            <input type="date" className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={filters.date} onChange={e => upd('date', e.target.value)}/>
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Vehicle</label>
+            <select className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={filters.vehicleType} onChange={e => upd('vehicleType', e.target.value)}>
+              <option value="">Any</option>
+              <option value="Car">Car</option>
+              <option value="Bike">Bike</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label className="text-xs text-slate-400 mb-1 block">Gender Preference</label>
+          <select className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={filters.gender} onChange={e => upd('gender', e.target.value)}>
+            <option value="">Any</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
+        <button type="submit" className="btn-primary w-full py-3 rounded-xl text-white font-semibold text-sm flex items-center justify-center gap-2">
+          <Icon name="search" size={16}/> Find Rides
+        </button>
+      </form>
+
+      {searched && (
+        <div className="space-y-3 fade-in">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-400">
+              {results.length > 0 ? `${results.length} ride${results.length !== 1 ? 's' : ''} found` : 'No rides found'}
+            </p>
+          </div>
+          {results.length === 0 ? (
+            <div className="glass rounded-2xl p-8 text-center">
+              <Icon name="search-x" size={40} className="text-slate-600 mx-auto mb-3"/>
+              <p className="text-slate-400 font-medium">No rides match your search</p>
+              <p className="text-slate-500 text-sm mt-1">Try adjusting your filters</p>
+            </div>
+          ) : (
+            results.map(r => <RideCard key={r.id} ride={r} currentUser={currentUser} onBook={handleBook}/>)
+          )}
+        </div>
+      )}
+
+      {!searched && (
+        <div className="glass rounded-2xl p-6 text-center">
+          <Icon name="map-pin" size={36} className="text-blue-500/60 mx-auto mb-2"/>
+          <p className="text-slate-400 text-sm">Use the search form above to find rides near you</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Map Component ────────────────────────────────────────────
+function RideMap({ pickup, destination }) {
+  const mapRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+  const markersRef = useRef([]);
+  const polylineRef = useRef(null);
+  const debounceRef = useRef(null);
+  const [loading, setLoading] = useState(false);
+  const [distance, setDistance] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!mapInstanceRef.current && mapRef.current) {
+      mapInstanceRef.current = L.map(mapRef.current, { zoomControl: true }).setView([20.5937, 78.9629], 5);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+      }).addTo(mapInstanceRef.current);
+    }
+    return () => { if (mapInstanceRef.current) { mapInstanceRef.current.remove(); mapInstanceRef.current = null; } };
+  }, []);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!pickup && !destination) return;
+    debounceRef.current = setTimeout(() => geocodeAndDraw(), 800);
+    return () => clearTimeout(debounceRef.current);
+  }, [pickup, destination]);
+
+  async function geocode(query) {
+    const url = `https://us1.locationiq.com/v1/search?key=${LIQ_KEY}&q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=in`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Geocode failed');
+    const data = await res.json();
+    if (!data || data.length === 0) throw new Error('Not found');
+    return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+  }
+
+  function haversine([lat1, lon1], [lat2, lon2]) {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  }
+
+  async function geocodeAndDraw() {
+    if (!mapInstanceRef.current) return;
+    setLoading(true);
+    setError('');
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+    if (polylineRef.current) { polylineRef.current.remove(); polylineRef.current = null; }
+
+    try {
+      const coords = [];
+      if (pickup) {
+        const c = await geocode(pickup);
+        const redIcon = L.divIcon({ className:'', html:`<div style="width:22px;height:22px;background:#ef4444;border-radius:50% 50% 50% 0;border:2px solid white;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>`, iconSize:[22,22], iconAnchor:[11,22] });
+        const m = L.marker(c, { icon: redIcon }).addTo(mapInstanceRef.current).bindPopup(`<b>Pickup:</b> ${pickup}`);
+        markersRef.current.push(m);
+        coords.push(c);
+      }
+      if (destination) {
+        const c = await geocode(destination);
+        const greenIcon = L.divIcon({ className:'', html:`<div style="width:22px;height:22px;background:#22c55e;border-radius:50% 50% 50% 0;border:2px solid white;transform:rotate(-45deg);box-shadow:0 2px 8px rgba(0,0,0,0.4)"></div>`, iconSize:[22,22], iconAnchor:[11,22] });
+        const m = L.marker(c, { icon: greenIcon }).addTo(mapInstanceRef.current).bindPopup(`<b>Destination:</b> ${destination}`);
+        markersRef.current.push(m);
+        coords.push(c);
+      }
+      if (coords.length === 2) {
+        polylineRef.current = L.polyline(coords, { color:'#3b82f6', weight:4, opacity:0.8, dashArray:'8,6' }).addTo(mapInstanceRef.current);
+        const d = haversine(coords[0], coords[1]);
+        setDistance(d.toFixed(1));
+        mapInstanceRef.current.fitBounds(L.latLngBounds(coords), { padding:[30,30] });
+      } else if (coords.length === 1) {
+        mapInstanceRef.current.setView(coords[0], 13);
+      }
+    } catch(e) {
+      setError('Could not geocode location');
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div className="relative">
+      <div ref={mapRef} id="map"/>
+      {loading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-slate-900/60 rounded-xl z-10">
+          <div className="flex items-center gap-2 text-blue-400">
+            <Icon name="loader-2" size={20} className="animate-spin"/>
+            <span className="text-sm">Finding route...</span>
+          </div>
+        </div>
+      )}
+      {distance && !loading && (
+        <div className="absolute bottom-3 left-3 z-10 bg-slate-900/90 text-white text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-slate-700">
+          <Icon name="route" size={12} className="text-blue-400"/>
+          ~{distance} km
+        </div>
+      )}
+      {error && <p className="text-xs text-red-400 mt-1">{error}</p>}
+    </div>
+  );
+}
+
+// ─── Post Ride Tab ────────────────────────────────────────────
+function PostRideTab({ currentUser, toast }) {
+  const [form, setForm] = useState({
+    pickup:'', destination:'', landmark:'', route:'',
+    time:'', seats:1, price:'', gender:'Any',
+    vehicleType:'', vehicleModel:'', vehicleImg:null,
+    phone:'', instagram:'',
+    schedule:'Today'
+  });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const fileRef = useRef(null);
+
+  function upd(k, v) { setForm(f => ({ ...f, [k]: v })); }
+
+  function handleFileChange(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => upd('vehicleImg', ev.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  function getDate() {
+    if (form.schedule === 'Today') return getTodayStr();
+    if (form.schedule === 'Tomorrow') return getTomorrowStr();
+    return getTodayStr();
+  }
+
+  function submit(e) {
+    e.preventDefault();
+    if (!form.pickup || !form.destination || !form.time || !form.price) {
+      toast('Please fill in all required fields', 'error'); return;
+    }
+    if (!form.vehicleType) { toast('Please select a vehicle type', 'error'); return; }
+    if (!form.vehicleModel) { toast('Please enter your vehicle model', 'error'); return; }
+    if (!form.phone && !form.instagram) { toast('Please provide at least one contact method', 'error'); return; }
+
+    setSubmitting(true);
+    setTimeout(() => {
+      const ride = {
+        id: 'r_' + Date.now(),
+        userId: currentUser.id,
+        driverName: currentUser.name,
+        driverAvatar: currentUser.avatar,
+        college: form.destination,
+        pickup: form.pickup,
+        destination: form.destination,
+        landmark: form.landmark,
+        route: form.route,
+        date: getDate(),
+        time: form.time,
+        seats: Number(form.seats),
+        price: Number(form.price),
+        gender: form.gender,
+        vehicleType: form.vehicleType,
+        vehicleModel: form.vehicleModel,
+        vehicleImg: form.vehicleImg,
+        phone: form.phone,
+        instagram: form.instagram,
+        schedule: form.schedule,
+      };
+      const rides = getRides();
+      saveRides([...rides, ride]);
+      supabaseInsert('rides', { ...ride, vehicle_img: null });
+      toast('Ride posted successfully!', 'success');
+      setSubmitting(false);
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 3000);
+      setForm({ pickup:'', destination:'', landmark:'', route:'', time:'', seats:1, price:'', gender:'Any', vehicleType:'', vehicleModel:'', vehicleImg:null, phone:'', instagram:'', schedule:'Today' });
+    }, 700);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-slate-100 mb-1">Post a Ride</h2>
+        <p className="text-sm text-slate-400">Share your ride with fellow students</p>
+      </div>
+
+      {submitted && (
+        <div className="glass rounded-2xl p-4 border border-emerald-500/30 bg-emerald-500/10 flex items-center gap-3 fade-in">
+          <Icon name="check-circle" size={20} className="text-emerald-400"/>
+          <p className="text-emerald-400 font-medium text-sm">Ride posted! Check it in your dashboard.</p>
+        </div>
+      )}
+
+      <form onSubmit={submit} className="space-y-4">
+        {/* Route */}
+        <div className="glass rounded-2xl p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Icon name="route" size={15} className="text-blue-400"/> Route Details</h3>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Pickup Location *</label>
+            <input className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder="e.g. Powai Lake Gate" value={form.pickup} onChange={e => upd('pickup', e.target.value)}/>
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Destination Campus *</label>
+            <select className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={form.destination} onChange={e => upd('destination', e.target.value)}>
+              <option value="">Select college</option>
+              {COLLEGES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Landmark</label>
+            <input className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder="e.g. Near McDonald's" value={form.landmark} onChange={e => upd('landmark', e.target.value)}/>
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Route Description</label>
+            <input className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder="e.g. Powai → JVLR → IIT Gate" value={form.route} onChange={e => upd('route', e.target.value)}/>
+          </div>
+        </div>
+
+        {/* Map Preview */}
+        {(form.pickup || form.destination) && (
+          <div className="glass rounded-2xl p-4 fade-in">
+            <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2"><Icon name="map" size={15} className="text-blue-400"/> Route Preview</h3>
+            <RideMap pickup={form.pickup} destination={form.destination}/>
+          </div>
+        )}
+
+        {/* Schedule */}
+        <div className="glass rounded-2xl p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Icon name="calendar" size={15} className="text-blue-400"/> Schedule</h3>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Schedule Type</label>
+            <div className="grid grid-cols-4 gap-2">
+              {['Today','Tomorrow','EveryDay','Weekly'].map(s => (
+                <button key={s} type="button" onClick={() => upd('schedule', s)}
+                  className={`text-xs py-2 rounded-xl font-medium border transition-all ${form.schedule === s ? 'bg-blue-500/20 border-blue-500 text-blue-400' : 'border-slate-700 text-slate-400 hover:border-slate-500'}`}>
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Departure Time *</label>
+              <input type="time" className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={form.time} onChange={e => upd('time', e.target.value)}/>
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Available Seats</label>
+              <input type="number" min="1" max="8" className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={form.seats} onChange={e => upd('seats', e.target.value)}/>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Price per Seat (₹) *</label>
+              <input type="number" min="0" className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder="e.g. 60" value={form.price} onChange={e => upd('price', e.target.value)}/>
+            </div>
+            <div>
+              <label className="text-xs text-slate-400 mb-1 block">Gender Preference</label>
+              <select className="input-field w-full rounded-xl px-3 py-2.5 text-sm" value={form.gender} onChange={e => upd('gender', e.target.value)}>
+                <option value="Any">Any</option>
+                <option value="Male">Male only</option>
+                <option value="Female">Female only</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Vehicle */}
+        <div className="glass rounded-2xl p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Icon name="car" size={15} className="text-blue-400"/> Vehicle Details</h3>
+          <div>
+            <label className="text-xs text-slate-400 mb-2 block">Vehicle Type *</label>
+            <div className="grid grid-cols-2 gap-3">
+              {[{type:'Car', icon:'car'},{type:'Bike', icon:'bike'}].map(v => (
+                <div key={v.type} onClick={() => upd('vehicleType', v.type)}
+                  className={`vehicle-card glass-light rounded-xl p-4 flex flex-col items-center gap-2 border-2 ${form.vehicleType === v.type ? 'selected border-blue-500' : 'border-transparent'}`}>
+                  <Icon name={v.icon} size={28} className={form.vehicleType === v.type ? 'text-blue-400' : 'text-slate-400'}/>
+                  <span className={`text-sm font-semibold ${form.vehicleType === v.type ? 'text-blue-400' : 'text-slate-400'}`}>{v.type}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {form.vehicleType && (
+            <div className="fade-in">
+              <label className="text-xs text-slate-400 mb-1 block">Vehicle Model *</label>
+              <input className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder={form.vehicleType === 'Bike' ? 'e.g. Honda Activa' : 'e.g. Maruti Swift'} value={form.vehicleModel} onChange={e => upd('vehicleModel', e.target.value)}/>
+            </div>
+          )}
+          {form.vehicleType && (
+            <div className="fade-in">
+              <label className="text-xs text-slate-400 mb-1 block">Vehicle Photo</label>
+              <div onClick={() => fileRef.current?.click()}
+                className="border-2 border-dashed border-slate-700 hover:border-blue-500 rounded-xl p-4 text-center cursor-pointer transition-colors">
+                {form.vehicleImg ? (
+                  <img src={form.vehicleImg} alt="Vehicle preview" className="h-28 w-full object-cover rounded-lg"/>
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <Icon name="camera" size={24} className="text-slate-500"/>
+                    <span className="text-xs text-slate-500">Tap to upload vehicle photo</span>
+                  </div>
+                )}
+              </div>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange}/>
+            </div>
+          )}
+        </div>
+
+        {/* Contact */}
+        <div className="glass rounded-2xl p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-slate-300 flex items-center gap-2"><Icon name="phone" size={15} className="text-blue-400"/> Contact Info <span className="text-xs text-slate-500 font-normal">(at least one required)</span></h3>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Phone Number</label>
+            <input className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder="+91 98765 43210" value={form.phone} onChange={e => upd('phone', e.target.value)}/>
+          </div>
+          <div>
+            <label className="text-xs text-slate-400 mb-1 block">Instagram Handle</label>
+            <input className="input-field w-full rounded-xl px-3 py-2.5 text-sm" placeholder="@your_handle" value={form.instagram} onChange={e => upd('instagram', e.target.value)}/>
+          </div>
+        </div>
+
+        <button type="submit" disabled={submitting}
+          className="btn-primary w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2 disabled:opacity-50">
+          {submitting ? <><Icon name="loader-2" size={18} className="animate-spin"/>Posting...</> : <><Icon name="plus-circle" size={18}/> Post Ride</>}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+// ─── Dashboard Tab ────────────────────────────────────────────
+function DashboardTab({ currentUser, toast }) {
+  const [myRides, setMyRides] = useState([]);
+  const [myBookings, setMyBookings] = useState([]);
+  const [activeSection, setActiveSection] = useState('rides');
+
+  useEffect(() => {
+    if (!currentUser) return;
+    const rides = getRides().filter(r => r.userId === currentUser.id);
+    setMyRides(rides);
+    const bookings = getBookings().filter(b => b.userId === currentUser.id);
+    const bookedRides = bookings.map(b => getRides().find(r => r.id === b.rideId)).filter(Boolean);
+    setMyBookings(bookedRides);
+  }, [currentUser]);
+
+  function deleteRide(rideId) {
+    const updated = getRides().filter(r => r.id !== rideId);
+    saveRides(updated);
+    setMyRides(prev => prev.filter(r => r.id !== rideId));
+    toast('Ride deleted', 'success');
+  }
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-slate-100 mb-1">Dashboard</h2>
+        <p className="text-sm text-slate-400">Manage your rides and bookings</p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-3">
+        {[
+          { label: 'My Rides', value: myRides.length, icon: 'car', color: 'blue' },
+          { label: 'Bookings', value: myBookings.length, icon: 'ticket', color: 'emerald' },
+          { label: 'Savings', value: `₹${myBookings.reduce((a,r) => a+(r?.price||0), 0)}`, icon: 'coins', color: 'yellow' },
+        ].map(s => (
+          <div key={s.label} className="glass rounded-xl p-3 text-center">
+            <p className={`text-xl font-bold text-${s.color}-400`}>{s.value}</p>
+            <p className="text-[10px] text-slate-500 mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div className="flex rounded-xl overflow-hidden glass-light p-1">
+        {[['rides','My Rides'],['bookings','My Bookings']].map(([id, label]) => (
+          <button key={id} onClick={() => setActiveSection(id)}
+            className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${activeSection===id ? 'bg-brand text-white' : 'text-slate-400 hover:text-white'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {activeSection === 'rides' && (
+        <div className="space-y-3 fade-in">
+          {myRides.length === 0 ? (
+            <div className="glass rounded-2xl p-8 text-center">
+              <Icon name="car" size={40} className="text-slate-600 mx-auto mb-3"/>
+              <p className="text-slate-400 font-medium">No rides posted yet</p>
+              <p className="text-slate-500 text-sm mt-1">Head to Post Ride to share a ride</p>
+            </div>
+          ) : myRides.map(r => (
+            <div key={r.id} className="glass rounded-2xl p-4 fade-in">
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="tag bg-blue-500/20 text-blue-400 text-xs">{r.schedule}</span>
+                    <span className="tag bg-slate-700 text-slate-300 text-xs">{r.time}</span>
+                  </div>
+                  <p className="font-semibold text-sm text-slate-200">{r.pickup} → {r.destination}</p>
+                  <p className="text-xs text-slate-500 mt-0.5">{r.vehicleModel} · ₹{r.price}/seat · {r.seats} seats</p>
+                </div>
+                <button onClick={() => deleteRide(r.id)} className="text-red-400/60 hover:text-red-400 transition-colors p-1.5 rounded-lg hover:bg-red-500/10">
+                  <Icon name="trash-2" size={16}/>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeSection === 'bookings' && (
+        <div className="space-y-3 fade-in">
+          {myBookings.length === 0 ? (
+            <div className="glass rounded-2xl p-8 text-center">
+              <Icon name="ticket" size={40} className="text-slate-600 mx-auto mb-3"/>
+              <p className="text-slate-400 font-medium">No bookings yet</p>
+              <p className="text-slate-500 text-sm mt-1">Find a ride and join it</p>
+            </div>
+          ) : myBookings.map(r => r && (
+            <div key={r.id} className="glass rounded-2xl p-4 fade-in">
+              <div className="flex items-start gap-3">
+                <Avatar initials={r.driverAvatar} size={40} idx={DEMO_USERS.findIndex(u => u.id === r.userId)}/>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-slate-200">{r.driverName}</p>
+                  <p className="text-xs text-slate-400">{r.pickup} → {r.destination}</p>
+                  <div className="flex gap-2 mt-2">
+                    <span className="tag bg-slate-700 text-slate-300 text-xs">{r.time}</span>
+                    <span className="tag bg-emerald-500/20 text-emerald-400 text-xs">₹{r.price}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Profile Tab ──────────────────────────────────────────────
+function ProfileTab({ currentUser, onLogout }) {
+  const users = getUsers();
+  const user = users.find(u => u.id === currentUser.id) || currentUser;
+  const myRidesCount = getRides().filter(r => r.userId === user.id).length;
+  const myBookingsCount = getBookings().filter(b => b.userId === user.id).length;
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-slate-100 mb-1">Profile</h2>
+        <p className="text-sm text-slate-400">Your account details</p>
+      </div>
+
+      <div className="glass rounded-2xl p-6 text-center">
+        <div className="flex justify-center mb-3">
+          <Avatar initials={user.avatar} size={72} idx={DEMO_USERS.findIndex(u => u.id === user.id)}/>
+        </div>
+        <h3 className="text-xl font-bold text-slate-100">{user.name}</h3>
+        <p className="text-sm text-slate-400 mt-0.5">{user.email}</p>
+        <div className="mt-3 flex justify-center">
+          <span className="tag bg-blue-500/20 text-blue-400 text-xs">
+            <Icon name="graduation-cap" size={12} className="mr-1"/> {user.college}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="glass rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-blue-400">{myRidesCount}</p>
+          <p className="text-xs text-slate-500 mt-0.5">Rides Posted</p>
+        </div>
+        <div className="glass rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-emerald-400">{myBookingsCount}</p>
+          <p className="text-xs text-slate-500 mt-0.5">Rides Joined</p>
+        </div>
+      </div>
+
+      {user.vehicle && (
+        <div className="glass rounded-xl p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+            <Icon name={user.vehicle === 'Bike' ? 'bike' : 'car'} size={20} className="text-blue-400"/>
+          </div>
+          <div>
+            <p className="text-xs text-slate-400">Vehicle</p>
+            <p className="text-sm font-semibold text-slate-200">{user.vehicle} – {user.model}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="glass rounded-xl p-4 space-y-3">
+        <h4 className="text-sm font-semibold text-slate-300">About CampusRide</h4>
+        <p className="text-xs text-slate-500 leading-relaxed">
+          CampusRide connects students for safe, affordable campus commutes.
+          Share rides, save money, and reduce your carbon footprint.
+        </p>
+      </div>
+
+      <button onClick={onLogout}
+        className="w-full py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all font-semibold text-sm flex items-center justify-center gap-2">
+        <Icon name="log-out" size={16}/> Log Out
+      </button>
+    </div>
+  );
+}
+
+// ─── Main App ─────────────────────────────────────────────────
+function App() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [tab, setTab] = useState('dashboard');
+  const [toastData, setToastData] = useState(null);
+
+  useEffect(() => {
+    initStorage();
+    const saved = localStorage.getItem('cr_current_user');
+    if (saved) { try { setCurrentUser(JSON.parse(saved)); } catch(e) {} }
+  }, []);
+
+  function handleLogin(user) {
+    setCurrentUser(user);
+    localStorage.setItem('cr_current_user', JSON.stringify(user));
+  }
+
+  function handleLogout() {
+    setCurrentUser(null);
+    localStorage.removeItem('cr_current_user');
+    setTab('dashboard');
+  }
+
+  function toast(msg, type='success') {
+    setToastData({ msg, type, key: Date.now() });
+  }
+
+  if (!currentUser) return <AuthScreen onLogin={handleLogin}/>;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      {/* Header */}
+      <header className="glass sticky top-0 z-40 px-4 py-3 border-b border-slate-700/50">
+        <div className="max-w-lg mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+              <Icon name="car" size={16} className="text-white"/>
+            </div>
+            <span className="font-bold text-base gradient-text">CampusRide</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 hidden sm:block">{currentUser.name}</span>
+            <button onClick={() => setTab('profile')} className="p-1.5 rounded-xl hover:bg-slate-700/50 transition-colors">
+              <Avatar initials={currentUser.avatar} size={30} idx={DEMO_USERS.findIndex(u => u.id === currentUser.id)}/>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="max-w-lg mx-auto px-4 pt-4 pb-28">
+        {tab === 'dashboard' && <DashboardTab currentUser={currentUser} toast={toast}/>}
+        {tab === 'find' && <FindRideTab currentUser={currentUser} toast={toast}/>}
+        {tab === 'post' && <PostRideTab currentUser={currentUser} toast={toast}/>}
+        {tab === 'profile' && <ProfileTab currentUser={currentUser} onLogout={handleLogout}/>}
+      </main>
+
+      <BottomNav tab={tab} setTab={setTab}/>
+
+      {toastData && <Toast key={toastData.key} msg={toastData.msg} type={toastData.type} onClose={() => setToastData(null)}/>}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

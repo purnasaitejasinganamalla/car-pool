@@ -1,0 +1,14 @@
+{
+  "name": "campusride-root",
+  "version": "1.0.0",
+  "description": "CampusRide - Student Carpool Platform",
+  "private": true,
+  "scripts": {
+    "bootstrap": "npm run install-server && npm run install-client",
+    "install-server": "cd server && npm install",
+    "install-client": "cd client && npm install",
+    "dev": "node start.js",
+    "seed": "cd server && node utils/seedData.js"
+  },
+  "dependencies": {}
+}
