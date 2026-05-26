@@ -1665,6 +1665,7 @@ const destIcon = window.L.divIcon({
       const [genderPreference, setGenderPreference] = useState('Any');
       const [driverPhone, setDriverPhone] = useState(currentUser?.phone || '');
       const [driverInstagram, setDriverInstagram] = useState(currentUser?.instagramId || '');
+      const [vehicleModel, setVehicleModel] = useState(currentUser?.vehicleDetails?.model || '');
       const [repeatType, setRepeatType] = useState('Today'); // Today, Tomorrow, EveryDay, Weekly, Calendar
       const [selectedDays, setSelectedDays] = useState([]);
       const [calendarDates, setCalendarDates] = useState([]);
@@ -1705,6 +1706,7 @@ const destIcon = window.L.divIcon({
           genderPreference,
           phone: driverPhone,
           instagramId: driverInstagram ? (driverInstagram.startsWith('@') ? driverInstagram : `@${driverInstagram}`) : '',
+          vehicleModel,
           isActive: true
         };
         setSchedules(prev => [...prev, newSched]);
@@ -1724,6 +1726,7 @@ const destIcon = window.L.divIcon({
           price: Number(price),
           phone: driverPhone,
           instagramId: driverInstagram ? (driverInstagram.startsWith('@') ? driverInstagram : `@${driverInstagram}`) : '',
+          vehicleModel,
           status: 'Active',
           joinedRiders: []
         };
@@ -1824,6 +1827,17 @@ const destIcon = window.L.divIcon({
                     />
                   </div>
                 </div>
+              </div>
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-3">
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">🚗 Vehicle Name / Model</label>
+                <input
+                  type="text"
+                  value={vehicleModel}
+                  onChange={e => setVehicleModel(e.target.value)}
+                  placeholder="e.g. Honda City, Royal Enfield Classic 350"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white/50 outline-none dark:text-white"
+                />
+                <p className="text-[10px] text-slate-400 mt-1">This will be shown on your ride card so riders know what vehicle to look for.</p>
               </div>
               <div className="pt-2">
                 <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5">Route preview</label>
@@ -2145,7 +2159,7 @@ if (seats <= 0) return { text: 'Ride Full', cls: 'bg-red-50 text-red-600 border 
                         {/* Badges row */}
                         <div className="flex flex-wrap gap-1.5 mb-3">
                           <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold ${badge.cls}`}>{badge.text}</span>
-                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">{ride.driver.vehicleDetails.type} • {ride.driver.vehicleDetails.model || 'Vehicle'}</span>
+                          <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">{ride.driver.vehicleDetails.type} • {ride.vehicleModel || ride.driver.vehicleDetails.model || 'Vehicle'}</span>
                           {ride.genderPreference && ride.genderPreference !== 'Any' && (
                             <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-purple-50 text-purple-600 border border-purple-100">{ride.genderPreference} only</span>
                           )}
