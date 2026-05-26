@@ -338,48 +338,57 @@ export default function Dashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {hostedRides.map((ride) => (
-                  <div key={ride._id} className="glass-card rounded-2xl p-5 border border-slate-200/50 dark:border-slate-800/40 hover:shadow-premium transition-all">
-                    <div className="flex justify-between items-start gap-2 mb-3">
-                      <span className={`px-2.5 py-0.5 text-[9px] font-bold rounded-lg border uppercase tracking-wider ${
-                        ride.status === 'Active' 
-                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/20' 
-                          : 'bg-slate-100 text-slate-500'
-                      }`}>
-                        {ride.status}
-                      </span>
-                      <span className="text-[10px] font-bold text-slate-400">
-                        Date: {ride.rideDate}
-                      </span>
+                  <div key={ride._id} className="glass-card rounded-2xl p-5 border border-slate-200/50 dark:border-slate-800/40 hover:shadow-premium transition-all flex flex-col justify-between">
+                    <div>
+                      {/* Status and Date Header */}
+                      <div className="flex justify-between items-start gap-2 mb-4 border-b border-slate-100 dark:border-slate-800/50 pb-3">
+                        <span className={`px-2.5 py-1 text-[9px] font-extrabold rounded-lg border uppercase tracking-wider ${
+                          ride.status === 'Active' 
+                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20 dark:border-emerald-800/50' 
+                            : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:border-slate-700'
+                        }`}>
+                          {ride.status}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-400">
+                          {ride.rideDate}
+                        </span>
+                      </div>
+
+                      {/* Locations details */}
+                      <div className="space-y-2 mb-4">
+                        <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-red-400 shrink-0"></span>
+                          <span className="truncate"><strong>Pickup:</strong> {ride.pickup}</span>
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                          <span className="h-2 w-2 rounded-full bg-emerald-400 shrink-0"></span>
+                          <span className="truncate"><strong>College:</strong> {ride.destination}</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 flex items-center gap-2 bg-slate-50 dark:bg-slate-900/40 p-2 rounded-xl border border-slate-100/50 dark:border-slate-850 mt-2">
+                          <span className="text-slate-400 shrink-0">🕒</span>
+                          <span className="truncate"><strong>Departure:</strong> {ride.departureTime} {ride.overrideTime && <span className="text-yellow-500 font-bold">(Overridden)</span>}</span>
+                        </div>
+                      </div>
+
+                      {/* Seat details / type */}
+                      <div className="flex justify-between items-center gap-2 mb-4">
+                        <span className={`px-2.5 py-1 text-[9px] font-extrabold rounded-lg uppercase tracking-wider ${
+                          ride.seatsAvailable > 2 ? 'bg-emerald-100 text-emerald-700' : ride.seatsAvailable > 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
+                        }`}>
+                          {ride.seatsAvailable} / {ride.originalSeats} seats left
+                        </span>
+
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                          🚗 {ride.vehicleType || 'Car'} • {ride.vehicleModel || 'N/A'}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="space-y-1.5 mb-4">
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        <strong>From:</strong> {ride.pickup}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        <strong>To College:</strong> {ride.destination}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        <strong>Departure Time:</strong> {ride.departureTime} {ride.overrideTime && <span className="text-[10px] text-yellow-500 font-bold">(Overridden)</span>}
-                      </p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        <strong>Vehicle:</strong> {ride.vehicleType || 'Car'} • {ride.vehicleModel || 'N/A'}
-                      </p>
-                    </div>
-
-                    <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-900/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/50 mb-4 text-xs font-semibold">
-                      <span className="text-slate-500">Seats available:</span>
-                      <span className={`px-2 py-0.5 rounded-lg text-white text-[10px] font-bold ${
-                        ride.seatsAvailable > 2 ? 'bg-accent-green' : ride.seatsAvailable > 0 ? 'bg-accent-yellow' : 'bg-accent-red'
-                      }`}>
-                        {ride.seatsAvailable} / {ride.originalSeats} seats left
-                      </span>
-                    </div>
-
-                    <div className="flex justify-end gap-1.5">
+                    {/* Footer Actions */}
+                    <div className="flex justify-end gap-2 pt-3.5 border-t border-slate-100 dark:border-slate-800/50">
                       <button 
                         onClick={() => handleSkipDate(ride.scheduleId, ride.rideDate)}
-                        className="rounded-xl border border-red-200 text-red-500 hover:bg-red-50 px-3 py-1.5 text-xs font-bold transition-all dark:border-red-950/30 dark:hover:bg-red-950/20"
+                        className="rounded-xl border border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 px-4 py-2 text-xs font-bold transition-all dark:border-red-950/30 dark:hover:bg-red-950/20"
                       >
                         Cancel Ride
                       </button>
