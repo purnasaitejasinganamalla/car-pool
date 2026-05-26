@@ -3,6 +3,7 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const { User, RideSchedule, RidePost, Booking, Message } = require('../models/Schemas');
 const { runScheduler } = require('../scheduler/rideScheduler');
+const { getLocalDateString } = require('../utils/dateHelper');
 const { isMock } = require('../config/db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'campusride-super-secret-key';
@@ -304,14 +305,31 @@ router.post('/rides/post', authMiddleware, async (req, res) => {
       isActive: true
     });
 
-    // Automatically trigger scheduler for Today/Tomorrow/All dates so they appear immediately in searches!
-    const todayStr = new Date().toISOString().split('T')[0];
-    await runScheduler(todayStr);
+    // Automatically trigger scheduler for relevant dates so they appear immediately in searches and dashboard!
+    const datesToRun = new Set();
+    const todayStr = getLocalDateString();
+    datesToRun.add(todayStr);
 
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-    await runScheduler(tomorrowStr);
+    const tomorrowStr = getLocalDateString(tomorrow);
+    datesToRun.add(tomorrowStr);
+
+    if (repeatType === 'Calendar' && selectedDates && selectedDates.length > 0) {
+      selectedDates.forEach(d => datesToRun.add(d));
+    }
+
+    if (repeatType === 'EveryDay' || repeatType === 'Weekly') {
+      for (let i = 2; i < 7; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() + i);
+        datesToRun.add(getLocalDateString(d));
+      }
+    }
+
+    for (const dStr of Array.from(datesToRun)) {
+      await runScheduler(dStr);
+    }
 
     res.status(201).json({
       message: 'Schedule created and rides generated successfully',
@@ -349,7 +367,7 @@ router.put('/rides/schedule/:id', authMiddleware, async (req, res) => {
     const updated = await RideSchedule.findByIdAndUpdate(req.params.id, updateObj);
     
     // Regenerate/Update active posts
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     await runScheduler(todayStr);
 
     res.json(updated);
@@ -427,13 +445,13 @@ router.get('/rides/search', async (req, res) => {
       if (!driver) continue;
 
       // Filter: College
-      if (college && post.destination !== college) continue;
+      if (college && !post.destination.toLowerCase().includes(college.toLowerCase())) continue;
 
       // Filter: Date ("Today" / "Tomorrow" or "YYYY-MM-DD")
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = getLocalDateString();
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      const tomorrowStr = tomorrow.toISOString().split('T')[0];
+      const tomorrowStr = getLocalDateString(tomorrow);
 
       let matchDate = post.rideDate;
       if (date === 'Today' && matchDate !== todayStr) continue;
@@ -441,7 +459,8 @@ router.get('/rides/search', async (req, res) => {
       if (date && date !== 'Today' && date !== 'Tomorrow' && date !== 'Any' && matchDate !== date) continue;
 
       // Filter: Vehicle Type
-      if (vehicleType && vehicleType !== 'Any' && driver.vehicleDetails.type !== vehicleType) continue;
+      const postVehicleType = post.vehicleType || driver.vehicleDetails.type;
+      if (vehicleType && vehicleType !== 'Any' && postVehicleType !== vehicleType) continue;
 
       // Filter: Seats Available
       if (seats && post.seatsAvailable < Number(seats)) continue;
@@ -788,7 +807,7 @@ router.post('/chats/message', authMiddleware, async (req, res) => {
 router.post('/scheduler/trigger', authMiddleware, async (req, res) => {
   try {
     const { dateStr } = req.body; // "YYYY-MM-DD"
-    const target = dateStr || new Date().toISOString().split('T')[0];
+    const target = dateStr || getLocalDateString();
     const summary = await runScheduler(target);
     res.json({
       message: `Scheduler ran successfully for date ${target}`,

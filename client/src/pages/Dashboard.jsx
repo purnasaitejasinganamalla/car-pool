@@ -225,7 +225,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
           { label: 'Weekly Schedules', value: schedules.length, icon: Calendar, color: 'text-brand-500 bg-brand-50 dark:bg-brand-950/20' },
-          { label: 'Rides Posted Today', value: hostedRides.filter(r => r.rideDate === new Date().toISOString().split('T')[0]).length, icon: Award, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
+          { label: 'Rides Posted Today', value: hostedRides.filter(r => r.rideDate === new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0]).length, icon: Award, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20' },
           { label: 'Saved Fuel Estimate', value: `${user.savedFuelEstimate || 0} L`, icon: Check, color: 'text-teal-500 bg-teal-50 dark:bg-teal-950/20' },
           { label: 'Fuel Cash Saved', value: `₹${(user.savedFuelEstimate || 0) * 100}`, icon: ShieldAlert, color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/20' }
         ].map((card, idx) => (

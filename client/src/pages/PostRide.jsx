@@ -121,6 +121,7 @@ export default function PostRide() {
           title: 'Ride Posted Successfully',
           message: `Your ride schedule (${repeatType}) starting from ${pickup} is live!`
         });
+        alert('Ride Posted Successfully!');
         navigate('/dashboard');
       } else {
         setError(data.message || 'Error posting ride');
@@ -415,50 +416,52 @@ export default function PostRide() {
               <div className="space-y-4">
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Select Calendar Dates</label>
                 
-                {/* Simulated Custom Calendar Month */}
+                {/* Authentic Native Date Picker */}
                 <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-4 bg-slate-50 dark:bg-slate-950/40">
-                  <div className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider text-center border-b pb-2 mb-2">
-                    {today.toLocaleString('default', { month: 'long' })} {currentYear}
-                  </div>
-                  
-                  {/* Calendar Grid Header */}
-                  <div className="grid grid-cols-7 gap-1 text-center font-bold text-[9px] text-slate-400 uppercase tracking-wider mb-1">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((h, i) => <span key={i}>{h}</span>)}
+                  <div className="flex flex-col gap-3">
+                    <label className="text-xs font-bold text-slate-800 dark:text-slate-100">Add Date</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="date"
+                        min={new Date().toISOString().split('T')[0]}
+                        id="datePickerInput"
+                        className="flex-1 px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white focus:border-brand-500 outline-none dark:border-slate-800 dark:bg-slate-900/50 dark:text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const val = document.getElementById('datePickerInput').value;
+                          if (val && !calendarDates.includes(val)) {
+                            setCalendarDates(prev => [...prev, val].sort());
+                            document.getElementById('datePickerInput').value = '';
+                          }
+                        }}
+                        className="bg-brand-500 text-white font-bold text-xs px-4 rounded-xl hover:bg-brand-600 shadow-sm"
+                      >
+                        Add
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Calendar Dates Grid */}
-                  <div className="grid grid-cols-7 gap-1 text-center">
-                    {/* Blank slots */}
-                    {[...Array(firstDayIndex)].map((_, idx) => (
-                      <div key={`blank-${idx}`} className="h-8"></div>
-                    ))}
-
-                    {/* Active Days */}
-                    {[...Array(daysInMonth)].map((_, idx) => {
-                      const dayNumber = idx + 1;
-                      const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(dayNumber).padStart(2, '0')}`;
-                      const isSelected = calendarDates.includes(dateStr);
-                      const isPast = dayNumber < today.getDate();
-
-                      return (
-                        <button
-                          key={dayNumber}
-                          type="button"
-                          disabled={isPast}
-                          onClick={() => handleCalendarDateToggle(dateStr)}
-                          className={`h-8 w-8 text-xs font-bold rounded-lg flex items-center justify-center transition-all ${
-                            isPast 
-                              ? 'text-slate-300 dark:text-slate-700 cursor-not-allowed' 
-                              : isSelected
-                                ? 'bg-brand-500 text-white shadow-md'
-                                : 'border border-transparent hover:border-slate-300 hover:bg-white text-slate-700 dark:text-slate-300 dark:hover:bg-slate-900'
-                          }`}
-                        >
-                          {dayNumber}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {calendarDates.length > 0 && (
+                    <div className="mt-4 border-t border-slate-200 dark:border-slate-800 pt-4">
+                      <label className="text-xs font-bold text-slate-800 dark:text-slate-100 block mb-2">Selected Dates ({calendarDates.length})</label>
+                      <div className="flex flex-wrap gap-2">
+                        {calendarDates.map(date => (
+                          <div key={date} className="flex items-center gap-1.5 bg-white dark:bg-slate-900 border border-brand-200 dark:border-brand-800 text-brand-600 dark:text-brand-400 px-2.5 py-1.5 rounded-lg text-xs font-semibold shadow-sm">
+                            <span>{date}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCalendarDateToggle(date)}
+                              className="text-brand-400 hover:text-red-500 focus:outline-none"
+                            >
+                              &times;
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <p className="text-[10px] text-slate-400 leading-relaxed">

@@ -1,4 +1,5 @@
 const { RideSchedule, RidePost } = require('../models/Schemas');
+const { getLocalDateString } = require('../utils/dateHelper');
 
 /**
  * Parses a date string into a Date object correctly using local timezone.
@@ -39,7 +40,7 @@ const runScheduler = async (targetDateStr) => {
       switch (schedule.repeatType) {
         case 'Today':
           // One-off for the day of creation (handled instantly during POST, but check if match)
-          const creationDate = new Date(schedule.createdAt).toISOString().split('T')[0];
+          const creationDate = getLocalDateString(new Date(schedule.createdAt));
           shouldPost = (creationDate === targetDateStr);
           break;
 
@@ -47,7 +48,7 @@ const runScheduler = async (targetDateStr) => {
           // One-off tomorrow (check if target date is 1 day after creation)
           const scheduleDate = new Date(schedule.createdAt);
           scheduleDate.setDate(scheduleDate.getDate() + 1);
-          const tomorrowStr = scheduleDate.toISOString().split('T')[0];
+          const tomorrowStr = getLocalDateString(scheduleDate);
           shouldPost = (tomorrowStr === targetDateStr);
           break;
 

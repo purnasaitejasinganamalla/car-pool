@@ -98,17 +98,18 @@ const startServer = async () => {
     }
 
     // 3. Initialize scheduler for today & tomorrow
-    const todayStr = new Date().toISOString().split('T')[0];
+    const { getLocalDateString } = require('./utils/dateHelper');
+    const todayStr = getLocalDateString();
     await runScheduler(todayStr);
 
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const tomorrowStr = getLocalDateString(tomorrow);
     await runScheduler(tomorrowStr);
 
     // 4. Start scheduler intervals (runs checks every 30 mins)
     setInterval(async () => {
-      const current = new Date().toISOString().split('T')[0];
+      const current = getLocalDateString();
       await runScheduler(current);
     }, 30 * 60 * 1000);
 

@@ -196,8 +196,13 @@
         savedFuelEstimate: 0
       }
     ];
-    const todayStr = new Date().toISOString().split('T')[0];
-    const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const getLocalDateString = (date = new Date()) => {
+      const offset = date.getTimezoneOffset();
+      const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+      return localDate.toISOString().split('T')[0];
+    };
+    const todayStr = getLocalDateString();
+    const tomorrowStr = getLocalDateString(new Date(Date.now() + 86400000));
     const initialSchedules = [
       {
         _id: 's1',
@@ -1670,6 +1675,14 @@ const destIcon = window.L.divIcon({
       const [repeatType, setRepeatType] = useState('Today'); // Today, Tomorrow, EveryDay, Weekly, Calendar
       const [selectedDays, setSelectedDays] = useState([]);
       const [calendarDates, setCalendarDates] = useState([]);
+      
+      const today = new Date();
+      const currentYear = today.getFullYear();
+      const currentMonth = today.getMonth();
+      const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
+      const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+      const firstDayIndex = new Date(currentYear, currentMonth, 1).getDay();
+
       useLucideRefresh(repeatType + selectedDays.length + calendarDates.length);
       const handleDaySelect = (idx) => {
         if (selectedDays.includes(idx)) {
@@ -1767,6 +1780,7 @@ const destIcon = window.L.divIcon({
         }
 
         addNotification({ title: 'Ride Posted Successfully', message: `Your commute starting from ${pickup} is live!` });
+        alert('Ride Posted Successfully!');
         onNavigate('dashboard');
       };
       return (
@@ -1938,30 +1952,52 @@ const destIcon = window.L.divIcon({
                   <div className="space-y-3">
                     <label className="block text-xs font-bold text-slate-600 uppercase">Interactive Calendar Dates</label>
                     
-                    {/* Compact custom calendar month display */}
-                    <div className="border rounded-xl p-3 bg-slate-50 dark:bg-slate-950/20 text-center">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase mb-2 block">May 2026</span>
-                      <div className="grid grid-cols-7 gap-1 text-[9px] text-slate-400 font-bold mb-1">
-                        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((h, i) => <span key={i}>{h}</span>)}
+                    {/* Authentic Native Date Picker */}
+                    <div className="border rounded-xl p-3 bg-slate-50 dark:bg-slate-950/20">
+                      <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase">Add Date</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="date"
+                            min={new Date().toISOString().split('T')[0]}
+                            id="datePickerInputDemo"
+                            className="flex-1 px-2 py-1.5 text-xs rounded-lg border border-slate-200 bg-white focus:border-brand-500 outline-none dark:border-slate-800 dark:bg-slate-900/50 dark:text-white"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const val = document.getElementById('datePickerInputDemo').value;
+                              if (val && !calendarDates.includes(val)) {
+                                setCalendarDates(prev => [...prev, val].sort());
+                                document.getElementById('datePickerInputDemo').value = '';
+                              }
+                            }}
+                            className="bg-brand-500 text-white font-bold text-xs px-3 rounded-lg hover:bg-brand-600 shadow-sm"
+                          >
+                            Add
+                          </button>
+                        </div>
                       </div>
-                      <div className="grid grid-cols-7 gap-1">
-                        {/* 5 empty spaces for May start */}
-                        {[...Array(5)].map((_, i) => <div key={i} className="h-6"></div>)}
-                        {[...Array(15)].map((_, i) => {
-                          const dateStr = `2026-05-${String(i + 1).padStart(2, '0')}`;
-                          const isSelected = calendarDates.includes(dateStr);
-                          return (
-                            <button
-                              key={i} type="button" onClick={() => handleCalendarDateToggle(dateStr)}
-                              className={`h-6 w-6 text-[10px] font-bold rounded-md flex items-center justify-center transition-all ${
-                                isSelected ? 'bg-brand-500 text-white' : 'hover:bg-slate-200 text-slate-700 dark:text-slate-400'
-                              }`}
-                            >
-                              {i + 1}
-                            </button>
-                          );
-                        })}
-                      </div>
+
+                      {calendarDates.length > 0 && (
+                        <div className="mt-3 border-t border-slate-200 dark:border-slate-800 pt-3">
+                          <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1.5">Selected Dates ({calendarDates.length})</label>
+                          <div className="flex flex-wrap gap-1.5">
+                            {calendarDates.map(date => (
+                              <div key={date} className="flex items-center gap-1 bg-white dark:bg-slate-900 border border-brand-200 dark:border-brand-800 text-brand-600 dark:text-brand-400 px-2 py-1 rounded-md text-[10px] font-bold shadow-sm">
+                                <span>{date}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCalendarDateToggle(date)}
+                                  className="text-brand-400 hover:text-red-500 focus:outline-none"
+                                >
+                                  &times;
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
@@ -1995,8 +2031,6 @@ const destIcon = window.L.divIcon({
       useLucideRefresh(String(joinModal) + hasSearched);
 const handleSearch = () => {
         const filtered = ridePosts.filter(p => {
-          // Exclude my own rides
-          if (p.driverId === currentUser?._id) return false;
           // Only active rides
           if (p.status !== 'Active') return false;
 const driver = users.find(u => u._id === p.driverId);
@@ -2007,7 +2041,8 @@ const driver = users.find(u => u._id === p.driverId);
           if (searchDate === 'Today' && p.rideDate !== todayStr) return false;
           if (searchDate === 'Tomorrow' && p.rideDate !== tomorrowStr) return false;
 // Vehicle match
-          if (searchVehicle !== 'Any' && driver.vehicleDetails.type !== searchVehicle) return false;
+          const postVehicleType = p.vehicleType || driver.vehicleDetails.type;
+          if (searchVehicle !== 'Any' && postVehicleType !== searchVehicle) return false;
 // Gender preference match
           if (searchGender !== 'Any' && p.genderPreference && p.genderPreference !== 'Any' && p.genderPreference !== searchGender) return false;
 return true;
